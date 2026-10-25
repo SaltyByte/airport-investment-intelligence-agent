@@ -2,7 +2,12 @@ import { simulateReadableStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
+import { buildNationalKpis } from '../kpis/national';
+import { airport, snapshot } from '../test-fixture';
 import { createApp } from './app';
+
+const fixture = snapshot([airport('SFO')]);
+const ctx = { snapshot: fixture, kpis: buildNationalKpis(fixture) };
 
 const usage = {
   inputTokens: {
@@ -36,7 +41,7 @@ const chunks = (body: string) =>
 describe('GET /api/health', () => {
   it('returns ok', async () => {
     const res = await request(
-      createApp({ model: new MockLanguageModelV4() }),
+      createApp({ model: new MockLanguageModelV4(), ctx }),
     ).get('/api/health');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ status: 'ok' });
@@ -44,63 +49,32 @@ describe('GET /api/health', () => {
 });
 
 describe('POST /api/chat', () => {
-  it('streams a getAirport tool output and then the answer text', async () => {
+  it('streams the answer text', async () => {
     const model = new MockLanguageModelV4({
-      doStream: [
-        {
-          stream: simulateReadableStream({
-            chunks: [
-              {
-                type: 'tool-call',
-                toolCallId: 'call-1',
-                toolName: 'getAirport',
-                input: '{"iata":"SFO"}',
-              },
-              finish('tool-calls'),
-            ],
-          }),
-        },
-        {
-          stream: simulateReadableStream({
-            chunks: [
-              { type: 'text-start', id: 't1' },
-              {
-                type: 'text-delta',
-                id: 't1',
-                delta: 'SFO is in San Francisco.',
-              },
-              { type: 'text-end', id: 't1' },
-              finish('stop'),
-            ],
-          }),
-        },
-      ],
+      doStream: {
+        stream: simulateReadableStream({
+          chunks: [
+            { type: 'text-start', id: 't1' },
+            { type: 'text-delta', id: 't1', delta: 'SFO is in San Francisco.' },
+            { type: 'text-end', id: 't1' },
+            finish('stop'),
+          ],
+        }),
+      },
     });
 
-    const res = await request(createApp({ model }))
+    const res = await request(createApp({ model, ctx }))
       .post('/api/chat')
       .send({ messages: [userMessage] });
 
     expect(res.status).toBe(200);
     expect(res.headers['x-vercel-ai-ui-message-stream']).toBe('v1');
-    const parts = chunks(res.text);
-    expect(parts).toContainEqual(
-      expect.objectContaining({
-        type: 'tool-output-available',
-        toolCallId: 'call-1',
-        output: expect.objectContaining({
-          ok: true,
-          airport: expect.objectContaining({ iata: 'SFO' }),
-        }),
-      }),
-    );
-    expect(parts).toContainEqual(
+    expect(chunks(res.text)).toContainEqual(
       expect.objectContaining({
         type: 'text-delta',
         delta: 'SFO is in San Francisco.',
       }),
     );
-    expect(model.doStreamCalls).toHaveLength(2);
   });
 
   it('reports a model failure as an error chunk instead of crashing', async () => {
@@ -110,7 +84,7 @@ describe('POST /api/chat', () => {
       },
     });
 
-    const res = await request(createApp({ model }))
+    const res = await request(createApp({ model, ctx }))
       .post('/api/chat')
       .send({ messages: [userMessage] });
 
@@ -121,8 +95,52 @@ describe('POST /api/chat', () => {
     });
   });
 
+  it('caps a tool-looping model at 8 steps and forces a text-only last step', async () => {
+    // Calls a tool on every step unless the SDK forbids tools, as a real provider would.
+    const model = new MockLanguageModelV4({
+      doStream: async ({ toolChoice }) => ({
+        stream:
+          toolChoice?.type === 'none'
+            ? simulateReadableStream({
+                chunks: [
+                  { type: 'text-start', id: 't1' },
+                  { type: 'text-delta', id: 't1', delta: 'Final answer.' },
+                  { type: 'text-end', id: 't1' },
+                  finish('stop'),
+                ],
+              })
+            : simulateReadableStream({
+                chunks: [
+                  {
+                    type: 'tool-call',
+                    toolCallId: crypto.randomUUID(),
+                    toolName: 'lookup',
+                    input: '{}',
+                  },
+                  finish('tool-calls'),
+                ],
+              }),
+      }),
+    });
+
+    const res = await request(createApp({ model, ctx }))
+      .post('/api/chat')
+      .send({ messages: [userMessage] });
+
+    const calls = model.doStreamCalls;
+    expect(calls).toHaveLength(8);
+    expect(calls.at(-1)?.toolChoice).toEqual({ type: 'none' });
+    expect(calls.slice(0, -1).map((c) => c.toolChoice?.type)).not.toContain(
+      'none',
+    );
+    const textDeltas = chunks(res.text).filter((c) => c.type === 'text-delta');
+    expect(textDeltas.at(-1)?.delta).toBe('Final answer.');
+  });
+
   it('rejects a malformed messages body with 400 InvalidInput', async () => {
-    const res = await request(createApp({ model: new MockLanguageModelV4() }))
+    const res = await request(
+      createApp({ model: new MockLanguageModelV4(), ctx }),
+    )
       .post('/api/chat')
       .send({ messages: 'nope' });
 

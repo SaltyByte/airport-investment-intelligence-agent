@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "pnpm -r --parallel dev",
-    "check": "biome check . && pnpm -r typecheck && pnpm -r test"
+    "check": "biome check . && pnpm -r typecheck && pnpm -r test",
+    "ingest": "pnpm --filter server ingest"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.2",

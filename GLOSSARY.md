@@ -39,7 +39,7 @@ The seat gap: extra seats an airport's routes would need so that none runs above
 _Avoid_: latent demand, spilled passengers, lost demand
 
 **Data period**:
-The trailing 12 complete months available in the source; growth compares it with the same 12 months one year earlier.
+The months a figure covers, stated per source: route traffic covers the latest 12 complete months, congestion the latest single month, and growth the last full calendar year against the one before.
 _Avoid_: as-of date, fetch date
 
 ## Scoring
@@ -49,7 +49,7 @@ All US commercial-service airports; every KPI is ranked as a percentile against 
 _Avoid_: comparison set, benchmark group
 
 **Terminal-expansion candidate**:
-An airport scoring high on three pillars: Growth (passenger growth over the data period), Pressure (how full and congested current capacity is) and Scale (passengers carried).
+An airport scoring high on three pillars: Growth (passenger growth over the last calendar year), Pressure (how full and congested current capacity is) and Scale (passengers carried).
 _Avoid_: investment target, opportunity
 
 **Congestion index**:

@@ -1,5 +1,6 @@
 import { useChat } from '@ai-sdk/react';
 import type { AppUIMessage } from '@app/shared';
+import { isToolUIPart } from 'ai';
 import { ArrowUp, RotateCcw, Square } from 'lucide-react';
 import {
   type FormEvent,
@@ -9,8 +10,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AirportCard } from '@/components/airport-card';
 import { Markdown } from '@/components/markdown';
+import { ResultCard } from '@/components/result-card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -54,8 +55,8 @@ function Message({ message }: { message: AppUIMessage }) {
         if (part.type === 'text') {
           return <Markdown key={key} text={part.text} />;
         }
-        if (part.type === 'tool-getAirport') {
-          return <AirportCard key={key} part={part} />;
+        if (isToolUIPart(part)) {
+          return <ResultCard key={key} part={part} />;
         }
         return null;
       })}
@@ -149,7 +150,7 @@ export function App() {
       <main
         ref={scrollRef}
         onScroll={(e) => updateFollow(e.currentTarget)}
-        className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable_both-edges]"
+        className="relative min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable_both-edges]"
       >
         <div className="mx-auto flex max-w-[800px] flex-col gap-6 px-4 py-6">
           {messages.length === 0 ? (

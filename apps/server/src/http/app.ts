@@ -2,6 +2,7 @@ import type { AppError } from '@app/shared';
 import { type LanguageModel, pipeUIMessageStreamToResponse } from 'ai';
 import express from 'express';
 import { streamChat } from '../agent';
+import type { ToolContext } from '../agent/tools';
 
 const STATUS: Record<AppError['kind'], number> = {
   InvalidInput: 400,
@@ -10,7 +11,13 @@ const STATUS: Record<AppError['kind'], number> = {
   UpstreamUnavailable: 502,
 };
 
-export const createApp = ({ model }: { model: LanguageModel }) => {
+export const createApp = ({
+  model,
+  ctx,
+}: {
+  model: LanguageModel;
+  ctx: ToolContext;
+}) => {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
 
@@ -19,7 +26,7 @@ export const createApp = ({ model }: { model: LanguageModel }) => {
   });
 
   app.post('/api/chat', async (req, res) => {
-    (await streamChat(model, req.body?.messages)).match(
+    (await streamChat(model, ctx, req.body?.messages)).match(
       (stream) => pipeUIMessageStreamToResponse({ response: res, stream }),
       (error) => res.status(STATUS[error.kind]).json({ error }),
     );

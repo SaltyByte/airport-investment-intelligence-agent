@@ -1,0 +1,210 @@
+import { EstimateUnmetDemandInput, type ToolResult } from '@app/shared';
+import { tool } from 'ai';
+import type { RouteRow } from '../../ingest/snapshot-schema';
+import { seatGap, TARGET_LOAD_FACTOR } from '../../kpis';
+import type { AirportKpis } from '../../kpis/national';
+import { DELAY_CAVEATS, GROWTH_CAVEAT, snapshotFooter } from '../footer';
+import { resolveAirports } from '../regions';
+import { roundResult } from '../round-result';
+import type { ToolContext } from '../tools';
+
+const DRIVER_PERCENTILE = 75;
+const NAS_SHARE = 25;
+
+type RouteGap = { dest: string; monthsAbove: number; seatsShort: number };
+
+/** Seat gap at the target load factor per route × month (carriers summed), totalled over the period. */
+export const routeGaps = (routes: RouteRow[], iata: string) => {
+  const months = new Map<
+    string,
+    { dest: string; seats: number; passengers: number }
+  >();
+  for (const r of routes) {
+    if (r.origin !== iata || r.classGroup !== 'passenger') continue;
+    const key = `${r.dest}|${r.month}`;
+    const m = months.get(key) ?? { dest: r.dest, seats: 0, passengers: 0 };
+    m.seats += r.seats;
+    m.passengers += r.passengers;
+    months.set(key, m);
+  }
+  const byDest = new Map<string, RouteGap>();
+  let gap = 0;
+  let monthsAbove = 0;
+  for (const { dest, seats, passengers } of months.values()) {
+    const short = seatGap(passengers, seats);
+    const above = passengers > seats * TARGET_LOAD_FACTOR ? 1 : 0;
+    gap += short;
+    monthsAbove += above;
+    const d = byDest.get(dest) ?? { dest, monthsAbove: 0, seatsShort: 0 };
+    d.monthsAbove += above;
+    d.seatsShort += short;
+    byDest.set(dest, d);
+  }
+  const top = [...byDest.values()]
+    .filter((d) => d.seatsShort > 0)
+    .sort((a, b) => b.seatsShort - a.seatsShort)
+    .slice(0, 5);
+  return { gap, monthsAbove, routeMonths: months.size, top };
+};
+
+export type DriverEvidence = {
+  monthsAbove: number;
+  routeMonths: number;
+  loadFactorPercentile: number | null;
+  congestionIndex: number | null;
+  nasShare: number | null;
+  growth: number | null;
+};
+
+const f1 = (n: number) => n.toFixed(1);
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+// Whole-number ordinal, matching the result card: 92.6 -> "93rd".
+const ordinal = (p: number) => {
+  const n = Math.round(p);
+  const suffix =
+    n % 100 >= 11 && n % 100 <= 13
+      ? 'th'
+      : (({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ??
+        'th');
+  return `${n}${suffix}`;
+};
+
+/** One sentence per capacity-constraint rule that fires, each with its evidence number. */
+export const demandDrivers = (e: DriverEvidence): string[] => {
+  const notes: string[] = [];
+  if (e.monthsAbove > 0)
+    notes.push(
+      `${fmt(e.monthsAbove)} of ${fmt(e.routeMonths)} route-months (${f1((e.monthsAbove / e.routeMonths) * 100)}%) ran above the 80% target load factor.`,
+    );
+  if (
+    e.loadFactorPercentile !== null &&
+    e.loadFactorPercentile >= DRIVER_PERCENTILE
+  )
+    notes.push(
+      `Load factor is at the ${ordinal(e.loadFactorPercentile)} percentile of US airports (threshold ${DRIVER_PERCENTILE}).`,
+    );
+  if (e.congestionIndex !== null && e.congestionIndex >= DRIVER_PERCENTILE)
+    notes.push(
+      `Congestion index is ${f1(e.congestionIndex)} of 100 (threshold ${DRIVER_PERCENTILE}).`,
+    );
+  if (e.nasShare !== null && e.nasShare >= NAS_SHARE)
+    notes.push(
+      `National airspace system (NAS) delays cause ${f1(e.nasShare)}% of delay-cause minutes (threshold ${NAS_SHARE}%).`,
+    );
+  if (e.growth !== null && e.growth > 0)
+    notes.push(
+      `Passenger enplanements grew ${f1(e.growth)}% in CY2025 vs CY2024.`,
+    );
+  if (notes.length > 0) return notes;
+  const checks = [
+    ['load factor', e.loadFactorPercentile, 'no load-factor data'],
+    ['congestion', e.congestionIndex, 'no delay data'],
+    ['NAS delays', e.nasShare, 'no delay-cause data'],
+    ['growth', e.growth, 'no prior-year enplanements'],
+  ] as const;
+  const below = checks.filter(([, v]) => v !== null).map(([name]) => name);
+  const missing = checks.filter(([, v]) => v === null).map(([, , why]) => why);
+  if (missing.length === 0)
+    return [
+      'No capacity-constraint driver was found: no route-month ran above 80%, and load factor, congestion, NAS delays and growth are all below their thresholds.',
+    ];
+  const notAssessed = `not assessed: ${missing.join(', ')}.`;
+  if (below.length === 0)
+    return [
+      `No capacity-constraint driver could be established from the available data: no route-month ran above 80%; ${notAssessed}`,
+    ];
+  const names =
+    below.length === 1
+      ? `${below[0]} is below its threshold`
+      : `${below.slice(0, -1).join(', ')} and ${below.at(-1)} are below their thresholds`;
+  return [
+    `No capacity-constraint driver was found: no route-month ran above 80%, and ${names}; ${notAssessed}`,
+  ];
+};
+
+export const estimateUnmetDemand = (
+  { snapshot, kpis }: ToolContext,
+  iata: string,
+): ToolResult => {
+  const found = resolveAirports([iata], kpis);
+  if (found.isErr()) return { ok: false, error: found.error };
+  const [a] = found.value as [AirportKpis];
+  const g = routeGaps(snapshot.routes, iata);
+  if (g.routeMonths === 0)
+    return {
+      ok: false,
+      error: {
+        kind: 'NotFound',
+        message: `${iata} has no passenger routes in the data period, so unmet demand cannot be estimated.`,
+      },
+    };
+  const nasShare = a.causeShares?.nas ?? null;
+  return {
+    ok: true,
+    title: `Unmet demand at ${a.iata} (${a.name})`,
+    metrics: [
+      { label: 'Seat gap', value: g.gap, unit: 'seats', note: 'estimate' },
+      { label: 'Route-months above 80%', value: g.monthsAbove, unit: 'count' },
+      {
+        label: 'Share of route-months above 80%',
+        value: (g.monthsAbove / g.routeMonths) * 100,
+        unit: 'percent',
+      },
+      {
+        label: 'Load factor',
+        value: a.loadFactor,
+        unit: 'ratio',
+        percentile: a.percentiles.loadFactor,
+      },
+      { label: 'Congestion index', value: a.congestionIndex, unit: 'score' },
+      {
+        label: 'NAS share of delay-cause minutes',
+        value: nasShare,
+        unit: 'percent',
+      },
+      {
+        label: 'Passenger growth CY2025 vs CY2024',
+        value: a.growth,
+        unit: 'percent',
+        percentile: a.percentiles.growth,
+      },
+    ],
+    table: {
+      columns: [
+        { key: 'iata', label: 'Destination' },
+        { key: 'monthsAbove', label: 'Months above 80%', unit: 'count' },
+        { key: 'seatsShort', label: 'Seats short', unit: 'seats' },
+      ],
+      rows: g.top.map((d) => ({
+        iata: d.dest,
+        monthsAbove: d.monthsAbove,
+        seatsShort: d.seatsShort,
+      })),
+    },
+    notes: demandDrivers({
+      monthsAbove: g.monthsAbove,
+      routeMonths: g.routeMonths,
+      loadFactorPercentile: a.percentiles.loadFactor,
+      congestionIndex: a.congestionIndex,
+      nasShare,
+      growth: a.growth,
+    }),
+    ...snapshotFooter(snapshot, ['traffic', 'delays', 'growth']),
+    assumptions: [
+      'Target load factor is 80%: seats needed = passengers ÷ 0.80.',
+      'Gap is computed per route × month on passenger flights departing the airport (all carriers and aircraft summed), rounded to whole seats, then summed over the period.',
+      'The seat gap is an estimate: demand turned away by full flights is never observed.',
+      'Drivers fire at: any route-month above 80%; load-factor percentile ≥ 75; congestion index ≥ 75; NAS share of delay-cause minutes ≥ 25%; growth > 0%.',
+    ],
+    caveats: [...DELAY_CAVEATS, GROWTH_CAVEAT],
+  };
+};
+
+export const estimateUnmetDemandTool = (ctx: ToolContext) =>
+  tool({
+    description:
+      'Estimate unmet flight demand at one airport (the seat gap at an 80% target load factor) and the capacity-constraint drivers behind it. Use for questions like "What is the unmet demand at SFO and why?".',
+    inputSchema: EstimateUnmetDemandInput,
+    execute: ({ iata }) => roundResult(estimateUnmetDemand(ctx, iata)),
+  });

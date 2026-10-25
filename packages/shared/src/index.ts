@@ -1,41 +1,32 @@
 import type { UIDataTypes, UIMessage } from 'ai';
-import { z } from 'zod';
+import type { ToolResult } from './tool-result';
+import type { CompareCongestionInput } from './tools/compareCongestion';
+import type { EstimateUnmetDemandInput } from './tools/estimateUnmetDemand';
+import type { GetLongHaulShareInput } from './tools/getLongHaulShare';
+import type { RankExpansionCandidatesInput } from './tools/rankExpansionCandidates';
 
-export const AppErrorKind = z.enum([
-  'UpstreamUnavailable',
-  'RateLimited',
-  'NotFound',
-  'InvalidInput',
-]);
-export const AppError = z.object({ kind: AppErrorKind, message: z.string() });
-export type AppError = z.infer<typeof AppError>;
-
-export const GetAirportInput = z.object({
-  iata: z.string().regex(/^[A-Z]{3}$/, 'IATA code must be 3 uppercase letters'),
-});
-export type GetAirportInput = z.infer<typeof GetAirportInput>;
-
-export const Airport = z.object({
-  iata: z.string(),
-  name: z.string(),
-  city: z.string(),
-  state: z.string(),
-});
-export type Airport = z.infer<typeof Airport>;
-
-export const GetAirportOutput = z.discriminatedUnion('ok', [
-  z.object({
-    ok: z.literal(true),
-    airport: Airport,
-    source: z.string(),
-    asOf: z.string(),
-  }),
-  z.object({ ok: z.literal(false), error: AppError }),
-]);
-export type GetAirportOutput = z.infer<typeof GetAirportOutput>;
+// AppError is defined in tool-result.ts: importing it back from this file would be an ESM cycle.
+export * from './tool-inputs';
+export * from './tool-result';
+export * from './tools/compareCongestion';
+export * from './tools/estimateUnmetDemand';
+export * from './tools/getLongHaulShare';
+export * from './tools/rankExpansionCandidates';
 
 export type AppUIMessage = UIMessage<
   unknown,
   UIDataTypes,
-  { getAirport: { input: GetAirportInput; output: GetAirportOutput } }
+  // Tool entries are added here as tools land.
+  {
+    rankExpansionCandidates: {
+      input: RankExpansionCandidatesInput;
+      output: ToolResult;
+    };
+    getLongHaulShare: { input: GetLongHaulShareInput; output: ToolResult };
+    compareCongestion: { input: CompareCongestionInput; output: ToolResult };
+    estimateUnmetDemand: {
+      input: EstimateUnmetDemandInput;
+      output: ToolResult;
+    };
+  }
 >;

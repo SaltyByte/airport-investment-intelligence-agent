@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "tsx --env-file-if-exists=../../.env src/main.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "ingest": "tsx src/ingest/main.ts"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "3.0.72",
@@ -18,6 +19,8 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/supertest": "^7.2.1",
+    "csv-parse": "^7.0.3",
+    "fflate": "^0.8.3",
     "supertest": "^7.3.1",
     "tsx": "^4.23.15"
   }

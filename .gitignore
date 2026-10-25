@@ -4,3 +4,4 @@ dist/
 coverage/
 .env
 *.local
+apps/server/.ingest-cache/

@@ -1,19 +1,20 @@
-import { GetAirportInput, type GetAirportOutput } from '@app/shared';
-import { tool } from 'ai';
-import { findAirport } from '../data-sources/airport-fixture';
+import type { Snapshot } from '../ingest/snapshot-schema';
+import type { AirportKpis } from '../kpis/national';
+import { compareCongestionTool } from './tools/compareCongestion';
+import { estimateUnmetDemandTool } from './tools/estimateUnmetDemand';
+import { getLongHaulShare } from './tools/getLongHaulShare';
+import { rankExpansionCandidates } from './tools/rankExpansionCandidates';
 
-// Err becomes ok:false output so the model states the gap instead of failing the stream.
-export const getAirportOutput = ({ iata }: GetAirportInput): GetAirportOutput =>
-  findAirport(iata).match<GetAirportOutput>(
-    (found) => ({ ok: true, ...found }),
-    (error) => ({ ok: false, error }),
-  );
-
-export const tools = {
-  getAirport: tool({
-    description:
-      'Look up a US airport by IATA code. Returns name, city and state with source and as-of date, or ok:false when data is unavailable.',
-    inputSchema: GetAirportInput,
-    execute: async (input) => getAirportOutput(input),
-  }),
+/** Data every tool reads; built once at server boot. */
+export type ToolContext = {
+  snapshot: Snapshot;
+  kpis: Map<string, AirportKpis>;
 };
+
+// Tool registry: every tool the agent may call is registered here, one line each.
+export const createTools = (ctx: ToolContext) => ({
+  getLongHaulShare: getLongHaulShare(ctx.snapshot, ctx.kpis),
+  compareCongestion: compareCongestionTool(ctx),
+  rankExpansionCandidates: rankExpansionCandidates(ctx),
+  estimateUnmetDemand: estimateUnmetDemandTool(ctx),
+});
