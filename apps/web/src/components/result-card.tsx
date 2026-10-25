@@ -1,6 +1,7 @@
 import { ToolResult, type ToolSuccess, type ToolUnit } from '@app/shared';
 import type { DynamicToolUIPart, ToolUIPart } from 'ai';
-import { CircleAlert, LoaderCircle } from 'lucide-react';
+import { cn } from 'cn';
+import { CircleAlert } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { errorCopy, formatValue, ordinalPct } from './result-format';
 
@@ -36,7 +37,7 @@ function Value({
 
 function Unavailable({ reason }: { reason: string }) {
   return (
-    <Card className="gap-2 py-4 shadow-none">
+    <Card className="gap-2 py-4 shadow-none motion-safe:animate-fade-in">
       <CardHeader className="flex items-center gap-2 px-4">
         <CircleAlert aria-hidden className="size-4 text-muted-foreground" />
         <CardTitle className="text-sm">Data unavailable</CardTitle>
@@ -129,7 +130,7 @@ function ResultTable({
 function Success({ result }: { result: ToolSuccess }) {
   const generated = new Date(result.generatedAt);
   return (
-    <Card className="gap-4 py-4 shadow-none">
+    <Card className="gap-4 py-4 shadow-none motion-safe:animate-fade-in">
       <CardHeader className="px-4">
         <CardTitle className="text-balance text-base leading-snug wrap-anywhere">
           {result.title}
@@ -192,24 +193,46 @@ function Success({ result }: { result: ToolSuccess }) {
   );
 }
 
+function Bar({ className }: { className: string }) {
+  return <span className={cn('skeleton block rounded-sm', className)} />;
+}
+
+// Rough Success shape (metrics grid, source line) so the swap to the result moves little.
+// The status text stays readable for everyone.
+function Loading() {
+  return (
+    <Card
+      aria-busy
+      className="gap-4 py-4 shadow-none motion-safe:animate-fade-in"
+    >
+      <CardHeader className="px-4">
+        <CardTitle className="font-normal text-muted-foreground text-sm">
+          Gathering data
+        </CardTitle>
+      </CardHeader>
+      <CardContent aria-hidden className="flex flex-col gap-4 px-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+          {['a', 'b', 'c'].map((k) => (
+            <div key={k} className="flex flex-col gap-2">
+              <Bar className="h-3 w-20" />
+              <Bar className="h-5 w-16" />
+            </div>
+          ))}
+        </div>
+        <div className="border-t pt-3">
+          <Bar className="h-2.5 w-44" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // One card for every tool: all tool outputs share the ToolResult contract.
 export function ResultCard({ part }: { part: ToolUIPart | DynamicToolUIPart }) {
   switch (part.state) {
     case 'input-streaming':
     case 'input-available':
-      return (
-        <Card aria-busy className="gap-2 py-4 shadow-none">
-          <CardHeader className="flex items-center gap-2 px-4">
-            <LoaderCircle
-              aria-hidden
-              className="size-4 animate-spin text-muted-foreground motion-reduce:animate-none"
-            />
-            <CardTitle className="font-normal text-muted-foreground text-sm">
-              Gathering data
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      );
+      return <Loading />;
     case 'output-error':
       return (
         <Unavailable reason="This lookup did not finish. Try asking again." />
