@@ -1,4 +1,4 @@
-import { EstimateUnmetDemandInput, type ToolResult } from '@app/shared';
+import { EstimateUnmetDemandInput, ToolResult } from '@app/shared';
 import { tool } from 'ai';
 import type { AirportKpis } from '../../kpis/airport-kpis';
 import { seatGap, TARGET_LOAD_FACTOR } from '../../kpis/formulas';
@@ -271,5 +271,6 @@ export const createEstimateUnmetDemandTool = (ctx: ToolContext) =>
     description:
       "Returns the estimated seat gap at one airport, also as extra departures at each route's average aircraft size, its most under-served routes and the capacity-constraint drivers behind it. Use for questions about unmet or excess demand at an airport and why.",
     inputSchema: EstimateUnmetDemandInput,
+    outputSchema: ToolResult,
     execute: (input) => roundResult(estimateUnmetDemand(ctx, input)),
   });

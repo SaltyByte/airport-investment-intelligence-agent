@@ -1,7 +1,7 @@
 import {
   type AppError,
   RankExpansionCandidatesInput,
-  type ToolResult,
+  ToolResult,
 } from '@app/shared';
 import { tool } from 'ai';
 import { err, ok, type Result } from 'neverthrow';
@@ -240,5 +240,6 @@ export const createRankExpansionCandidatesTool = (ctx: ToolContext) =>
     description:
       "Returns airports in a region or a list ranked by Expansion Score with its Growth, Pressure and Scale pillars, plus airports lacking data and, in points per pillar, why the top airport leads the next; region 'US' ranks every US airport and returns the top 20 with counts of scored and unscored airports. Use for questions about which airports most need terminal expansion.",
     inputSchema: RankExpansionCandidatesInput,
+    outputSchema: ToolResult,
     execute: async (input) => roundResult(rankExpansionCandidates(ctx, input)),
   });

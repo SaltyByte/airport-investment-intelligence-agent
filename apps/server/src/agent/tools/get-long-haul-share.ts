@@ -1,4 +1,4 @@
-import { GetLongHaulShareInput, type ToolResult } from '@app/shared';
+import { GetLongHaulShareInput, ToolResult } from '@app/shared';
 import { tool } from 'ai';
 import { LONG_HAUL_MILES, longHaulShare } from '../../kpis/formulas';
 import type { RouteRow } from '../../snapshot/schema';
@@ -114,5 +114,6 @@ export const createGetLongHaulShareTool = (ctx: ToolContext) =>
     description:
       'Returns the long-haul share of departures from one airport for all, passenger and cargo flights, with its top long-haul destinations. Use for questions about long-haul flights out of an airport.',
     inputSchema: GetLongHaulShareInput,
+    outputSchema: ToolResult,
     execute: async (input) => roundResult(getLongHaulShare(ctx, input)),
   });

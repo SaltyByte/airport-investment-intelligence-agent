@@ -1,6 +1,6 @@
 import {
   CompareCongestionInput,
-  type ToolResult,
+  ToolResult,
   type ToolTable,
 } from '@app/shared';
 import { tool } from 'ai';
@@ -214,5 +214,6 @@ export const createCompareCongestionTool = (ctx: ToolContext) =>
     description:
       'Returns the congestion index, delay, taxi-out, cancellation and delay-cause figures for 2-10 airports or every airport in a region, most congested first, and, in points per component, why the most congested leads the next. Use to compare how congested airports are.',
     inputSchema: CompareCongestionInput,
+    outputSchema: ToolResult,
     execute: async (input) => roundResult(compareCongestion(ctx, input)),
   });

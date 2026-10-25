@@ -6,5 +6,6 @@ export const suggestFollowUpsTool = tool({
   description:
     'Offers the user 2-3 follow-up questions. Call it once, as the very last action, after an answer that used tool data.',
   inputSchema: SuggestFollowUpsInput,
+  outputSchema: SuggestFollowUpsInput,
   execute: async (input) => input,
 });
