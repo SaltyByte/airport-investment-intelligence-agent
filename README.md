@@ -43,12 +43,12 @@ Open http://localhost:8080. Pass only `DEEPSEEK_API_KEY` (and optionally `DEEPSE
 
 ### Troubleshooting
 
-| Symptom | Fix |
-| --- | --- |
-| Server exits with `Invalid environment: DEEPSEEK_API_KEY is required` | `.env` must sit in the repo root (next to `.env.example`) and hold the key. |
-| `server failed to start: listen EADDRINUSE` | Port 4100 is taken: set `SERVER_PORT` in `.env` to a free port. The web proxy follows it. |
-| Vite reports port 5173 is in use | Free port 5173; the web app does not fall back to another port. |
-| The page loads but answers fail | Check the key and the DeepSeek account balance. |
+| Symptom                                                               | Fix                                                                                       |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Server exits with `Invalid environment: DEEPSEEK_API_KEY is required` | `.env` must sit in the repo root (next to `.env.example`) and hold the key.               |
+| `server failed to start: listen EADDRINUSE`                           | Port 4100 is taken: set `SERVER_PORT` in `.env` to a free port. The web proxy follows it. |
+| Vite reports port 5173 is in use                                      | Free port 5173; the web app does not fall back to another port.                           |
+| The page loads but answers fail                                       | Check the key and the DeepSeek account balance.                                           |
 
 ### Other commands
 
