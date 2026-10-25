@@ -7,7 +7,8 @@
     "start": "tsx src/main.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "ingest": "tsx src/ingest/main.ts"
+    "ingest": "tsx src/ingest/main.ts",
+    "eval": "tsx --env-file-if-exists=../../.env src/eval/main.ts"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "3.0.72",

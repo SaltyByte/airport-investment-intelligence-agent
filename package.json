@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "check": "biome check . && pnpm -r typecheck && pnpm -r test",
-    "ingest": "pnpm --filter server ingest"
+    "ingest": "pnpm --filter server ingest",
+    "eval": "pnpm --filter server eval"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.2",

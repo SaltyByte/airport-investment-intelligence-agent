@@ -96,6 +96,7 @@ The rules are in [ADR 0001](adr/0001-national-percentile-pillar-scoring.md), and
 - **Percentile scoring favours relative position over absolute size.** Ranks are stable and comparable across questions, but a percentile hides magnitude: a 1-point lead may be a tiny real difference. Scale is only 20% of the score, so a small, fast-growing, busy airport can outrank a much larger one.
 - **TranStats form scraping is brittle.** It depends on ASP.NET viewstate fields and the "Latest Available Data" text. If the form changes, ingest fails loudly ("expected a ZIP… (form changed?)") and the committed snapshot stays in place.
 - **Snapshot freshness:** data is only as fresh as the last `pnpm ingest` (the current snapshot was generated 2026-10-25). Ingest finds the newest published FAA calendar year by probing back from last year, so a re-ingest after CY2026 is published (expected Aug 2027) switches growth and the peer set to it. Once the traffic period ended more than 6 months ago (`STALE_AFTER_MONTHS` in `agent/tools/result.ts`), every data card gets a caveat, the system prompt's limits mention it and the server warns at startup.
+- **Grounding is measured, not proven.** `pnpm eval` sends the four brief questions through the live chat path once each and fails on wrong routing or an answer number found in no tool output, the system prompt or the question (compared by value). It uses the live model, costs tokens and varies run to run, so it is not part of `pnpm check`; it checks no other prompt rule.
 
 ## How to run
 
@@ -103,4 +104,5 @@ Copy `.env.example` to `.env` and set `DEEPSEEK_API_KEY` (`DEEPSEEK_MODEL` defau
 - `pnpm dev`: starts the server (port 4100 by default) and the web app.
 - `pnpm ingest`: downloads the sources and rewrites `apps/server/data/snapshot.json.gz`. Takes minutes, mostly the on-time file; cached downloads are reused.
 - `pnpm check`: runs Biome, typecheck and the tests across the workspace.
+- `pnpm eval`: runs the four brief questions against the live model and prints PASS/FAIL per question for tool routing and number grounding; exits 1 on any failure. Needs `DEEPSEEK_API_KEY`.
 - `docker build -t airport-agent . && docker run -p 8080:8080 -e DEEPSEEK_API_KEY=… airport-agent`: one container serves the web app and `/api` on port 8080 (how it runs on DigitalOcean App Platform, with `DEEPSEEK_API_KEY` set as an encrypted runtime variable).
