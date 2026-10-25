@@ -61,7 +61,11 @@ export function App() {
           {messages.length === 0 ? (
             <EmptyState onSelect={send} />
           ) : (
-            <MessageList messages={messages} />
+            <MessageList
+              messages={messages}
+              status={status}
+              onFollowUp={send}
+            />
           )}
           {busy && <TypingIndicator />}
           {error && <ChatError message={error.message} onRetry={retry} />}
