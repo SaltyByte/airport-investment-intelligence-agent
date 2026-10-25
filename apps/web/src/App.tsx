@@ -57,7 +57,7 @@ export function App() {
         onScroll={onScroll}
         className="relative min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable_both-edges]"
       >
-        <div className="mx-auto flex max-w-[800px] flex-col gap-6 px-4 py-6">
+        <div className="mx-auto flex max-w-[1040px] flex-col gap-6 px-4 py-6">
           {messages.length === 0 ? (
             <EmptyState onSelect={send} />
           ) : (

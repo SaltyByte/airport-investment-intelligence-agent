@@ -19,7 +19,7 @@ const components: Components = {
   h3: ({ node: _, ...props }) => <h4 className="font-semibold" {...props} />,
   a: ({ node: _, ...props }) => (
     <a
-      className="underline underline-offset-4"
+      className="text-drafting underline underline-offset-4"
       target="_blank"
       rel="noopener noreferrer"
       {...props}
@@ -34,7 +34,7 @@ const components: Components = {
       aria-label="Code"
       // biome-ignore lint/a11y/noNoninteractiveTabindex: keyboard-scrollable region
       tabIndex={0}
-      className="overflow-x-auto rounded-md bg-muted outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="overflow-x-auto rounded-md bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <pre className="p-3" {...props} />
     </section>
@@ -44,7 +44,7 @@ const components: Components = {
       aria-label="Table"
       // biome-ignore lint/a11y/noNoninteractiveTabindex: keyboard-scrollable region
       tabIndex={0}
-      className="overflow-x-auto rounded-md border bg-card outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="overflow-x-auto rounded-md border bg-card outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <table
         className="w-full text-left text-sm [&_tr:last-child_td]:border-b-0"

@@ -28,6 +28,9 @@
   --color-ring: var(--ring);
   --color-highlight: var(--highlight);
   --color-highlight-foreground: var(--highlight-foreground);
+  --color-drafting: var(--drafting);
+  --color-sign: var(--sign);
+  --font-sans: "Public Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Motion: short ease-out arrivals on transform/opacity only; loops run only while loading.
@@ -93,45 +96,47 @@
   }
 }
 
-/* Aviation navy (hue 262) carries action and focus; its tints carry surfaces and separators.
-   Cards stay pure white so data reads cleanly on the faintly cool page. */
+/* Airport Layout Plan sheet: cool drawing-sheet ground, white sheets, ink for text, rules and
+   action, grid grey for cell and table rules. Drafting blue means estimate, selection, focus and
+   links; sign yellow on sign black is for IATA codes only. */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(0.985 0.005 262);
-  --foreground: oklch(0.19 0.025 262);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.19 0.025 262);
+  --radius: 6px;
+  --background: #f4f6f7;
+  --foreground: #1b2230;
+  --card: #ffffff;
+  --card-foreground: #1b2230;
   color-scheme: light;
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.19 0.025 262);
-  --primary: oklch(0.32 0.09 262);
-  --primary-foreground: oklch(0.985 0.005 262);
-  /* Light enough that the focus ring keeps 3:1 against it (see --ring). */
-  --secondary: oklch(0.945 0.02 262);
-  --secondary-foreground: oklch(0.19 0.025 262);
-  --muted: oklch(0.95 0.014 262);
-  /* Tinted toward navy; still ≥4.5:1 on the page, white cards and the muted surface. */
-  --muted-foreground: oklch(0.47 0.04 262);
-  --accent: oklch(0.95 0.018 262);
-  --accent-foreground: oklch(0.32 0.09 262);
+  --popover: #ffffff;
+  --popover-foreground: #1b2230;
+  --primary: #1b2230;
+  --primary-foreground: #ffffff;
+  /* Fills (skeletons, empty bar tracks, hover): the drawing-sheet ground one step darker. */
+  --secondary: #e6eaee;
+  --secondary-foreground: #1b2230;
+  --muted: #e6eaee;
+  /* Ink at reduced strength; ≥4.5:1 on the page, white sheets and the --muted fill. */
+  --muted-foreground: #4f5a6b;
+  --accent: #e6eaee;
+  --accent-foreground: #1b2230;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9 0.018 262);
-  --input: oklch(0.86 0.025 262);
-  /* At 50% over the page or a card this keeps ≥3:1 against the page, cards, --muted and
-     --secondary fills, and the navy --primary button it surrounds. Darker loses the button;
-     lighter loses the tinted fills. */
-  --ring: oklch(0.2 0.08 262);
-  /* The one accent: airfield location-sign yellow, reserved for codes, scores and highlights. */
-  --highlight: oklch(0.87 0.17 92);
-  --highlight-foreground: oklch(0.145 0 0);
+  --border: #b4bcc8;
+  /* Inputs need a 3:1 boundary, which grid grey does not reach; they take ink. */
+  --input: #1b2230;
+  /* Opaque only: at 50% alpha drafting blue drops under 3:1 on white. */
+  --ring: #2b5fae;
+  --drafting: #2b5fae;
+  --sign: #14171c;
+  --highlight: #f2c230;
+  --highlight-foreground: #14171c;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   body {
     @apply bg-background text-foreground antialiased;
+    scrollbar-color: var(--border) transparent;
   }
   ::selection {
     @apply bg-highlight text-highlight-foreground;
