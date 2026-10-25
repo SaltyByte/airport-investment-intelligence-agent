@@ -1,5 +1,6 @@
 import type { AppUIMessage } from '@app/shared';
-import { CircleAlert, LoaderCircle } from 'lucide-react';
+import { cn } from 'cn';
+import { CircleAlert } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type GetAirportPart = Extract<
@@ -18,7 +19,7 @@ function CodeSign({ code }: { code: string }) {
 
 function Unavailable({ title, reason }: { title: string; reason: string }) {
   return (
-    <Card className="gap-2 py-4 shadow-none">
+    <Card className="gap-2 py-4 shadow-none motion-safe:animate-fade-in">
       <CardHeader className="flex items-center gap-2 px-4">
         <CircleAlert aria-hidden className="size-4 text-muted-foreground" />
         <CardTitle className="text-sm">{title}</CardTitle>
@@ -30,23 +31,53 @@ function Unavailable({ title, reason }: { title: string; reason: string }) {
   );
 }
 
+function Bar({ className }: { className: string }) {
+  return <span className={cn('skeleton block rounded-sm', className)} />;
+}
+
+// Same box model as the data card (header sign, two table rows, source line), so the swap to
+// the real card does not move anything below it. The status text stays readable for everyone.
+function AirportSkeleton({ iata }: { iata?: string }) {
+  const row = 'flex h-5 items-center gap-4';
+  return (
+    <Card
+      aria-busy
+      className="gap-3 py-4 shadow-none motion-safe:animate-fade-in"
+    >
+      <CardHeader className="flex min-h-10 items-center gap-3 px-4 sm:min-h-0">
+        <Bar className="h-7 w-12" />
+        <CardTitle className="font-normal text-muted-foreground text-sm">
+          Looking up airport{iata ? ` ${iata}` : ''}
+        </CardTitle>
+      </CardHeader>
+      <CardContent aria-hidden className="px-4">
+        <div className="border-b py-1.5">
+          <div className={row}>
+            <Bar className="h-3 w-8" />
+            <Bar className="h-3 w-24" />
+            <Bar className="h-3 w-16" />
+          </div>
+        </div>
+        <div className="py-1.5">
+          <div className={row}>
+            <Bar className="h-3 w-8" />
+            <Bar className="h-3 w-40" />
+            <Bar className="h-3 w-16" />
+          </div>
+        </div>
+        <div className="mt-3 flex h-4 items-center">
+          <Bar className="h-2.5 w-44" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function AirportCard({ part }: { part: GetAirportPart }) {
   switch (part.state) {
     case 'input-streaming':
     case 'input-available':
-      return (
-        <Card aria-busy className="gap-2 py-4 shadow-none">
-          <CardHeader className="flex items-center gap-2 px-4">
-            <LoaderCircle
-              aria-hidden
-              className="size-4 animate-spin text-muted-foreground motion-reduce:animate-none"
-            />
-            <CardTitle className="font-normal text-muted-foreground text-sm">
-              Looking up airport{part.input?.iata ? ` ${part.input.iata}` : ''}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      );
+      return <AirportSkeleton iata={part.input?.iata} />;
     case 'output-error':
       return (
         <Unavailable title="Airport lookup failed" reason={part.errorText} />
@@ -60,8 +91,8 @@ export function AirportCard({ part }: { part: GetAirportPart }) {
       }
       const { airport } = out;
       return (
-        <Card className="gap-3 py-4 shadow-none">
-          <CardHeader className="flex items-center gap-3 px-4">
+        <Card className="gap-3 py-4 shadow-none motion-safe:animate-fade-in">
+          <CardHeader className="flex min-h-10 items-center gap-3 px-4 sm:min-h-0">
             <CodeSign code={airport.iata} />
             <CardTitle className="text-sm">{airport.name}</CardTitle>
           </CardHeader>

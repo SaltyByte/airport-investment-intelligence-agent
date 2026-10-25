@@ -32,7 +32,7 @@ export function ChatError({
         <Button
           variant="outline"
           size="sm"
-          className="mt-1 h-11 text-foreground"
+          className="mt-1 h-11 text-foreground motion-safe:active:scale-[0.97]"
           onClick={onRetry}
         >
           <RotateCcw aria-hidden />

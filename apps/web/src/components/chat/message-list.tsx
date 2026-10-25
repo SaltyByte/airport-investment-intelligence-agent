@@ -8,13 +8,13 @@ export const textOf = (message: AppUIMessage) =>
 function Message({ message }: { message: AppUIMessage }) {
   if (message.role === 'user') {
     return (
-      <div className="ml-auto max-w-[85%] rounded-xl bg-secondary px-4 py-2.5 whitespace-pre-wrap wrap-anywhere">
+      <div className="ml-auto max-w-[85%] rounded-xl bg-secondary px-4 py-2.5 whitespace-pre-wrap wrap-anywhere motion-safe:animate-enter">
         {textOf(message)}
       </div>
     );
   }
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 motion-safe:animate-enter">
       {message.parts.map((part, i) => {
         const key = `${message.id}-${i}`;
         if (part.type === 'text') {

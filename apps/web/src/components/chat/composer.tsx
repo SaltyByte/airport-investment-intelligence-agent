@@ -72,24 +72,27 @@ export function Composer({
             ref={stopButtonRef}
             type="button"
             size="icon"
-            className="size-11"
+            className="size-11 motion-safe:active:scale-95"
             aria-label="Stop response"
             onClick={() => {
               onStop();
               inputRef.current?.focus();
             }}
           >
-            <Square aria-hidden className="fill-current" />
+            <Square
+              aria-hidden
+              className="fill-current motion-safe:animate-swap"
+            />
           </Button>
         ) : (
           <Button
             type="submit"
             size="icon"
-            className="size-11"
+            className="size-11 motion-safe:active:scale-95"
             aria-label="Send message"
             disabled={!value.trim()}
           >
-            <ArrowUp aria-hidden />
+            <ArrowUp aria-hidden className="motion-safe:animate-swap" />
           </Button>
         )}
       </form>
