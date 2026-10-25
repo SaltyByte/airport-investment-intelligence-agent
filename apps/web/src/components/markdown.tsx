@@ -44,7 +44,7 @@ const components: Components = {
       aria-label="Table"
       // biome-ignore lint/a11y/noNoninteractiveTabindex: keyboard-scrollable region
       tabIndex={0}
-      className="overflow-x-auto rounded-md border outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="overflow-x-auto rounded-md border bg-card outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       <table
         className="w-full text-left text-sm [&_tr:last-child_td]:border-b-0"

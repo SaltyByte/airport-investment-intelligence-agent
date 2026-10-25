@@ -30,28 +30,34 @@
   --color-highlight-foreground: var(--highlight-foreground);
 }
 
+/* Aviation navy (hue 262) carries action and focus; its tints carry surfaces and separators.
+   Cards stay pure white so data reads cleanly on the faintly cool page. */
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.985 0.005 262);
+  --foreground: oklch(0.19 0.025 262);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.19 0.025 262);
   color-scheme: light;
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.19 0.025 262);
+  --primary: oklch(0.32 0.09 262);
+  --primary-foreground: oklch(0.985 0.005 262);
+  /* Light enough that the focus ring keeps 3:1 against it (see --ring). */
+  --secondary: oklch(0.945 0.02 262);
+  --secondary-foreground: oklch(0.19 0.025 262);
+  --muted: oklch(0.95 0.014 262);
+  /* Tinted toward navy; still ≥4.5:1 on the page, white cards and the muted surface. */
+  --muted-foreground: oklch(0.47 0.04 262);
+  --accent: oklch(0.95 0.018 262);
+  --accent-foreground: oklch(0.32 0.09 262);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  /* Darker than shadcn's default so the 50% focus ring keeps 3:1 against white. */
-  --ring: oklch(0.205 0 0);
+  --border: oklch(0.9 0.018 262);
+  --input: oklch(0.86 0.025 262);
+  /* At 50% over the page or a card this keeps ≥3:1 against the page, cards, --muted and
+     --secondary fills, and the navy --primary button it surrounds. Darker loses the button;
+     lighter loses the tinted fills. */
+  --ring: oklch(0.2 0.08 262);
   /* The one accent: airfield location-sign yellow, reserved for codes, scores and highlights. */
   --highlight: oklch(0.87 0.17 92);
   --highlight-foreground: oklch(0.145 0 0);

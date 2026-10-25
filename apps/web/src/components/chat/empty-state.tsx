@@ -25,7 +25,7 @@ export function EmptyState({
           <li key={q}>
             <Button
               variant="outline"
-              className="h-auto min-h-11 w-full justify-start py-2.5 text-left whitespace-normal"
+              className="h-auto min-h-11 w-full justify-start bg-card py-2.5 text-left whitespace-normal"
               onClick={() => onSelect(q)}
             >
               {q}

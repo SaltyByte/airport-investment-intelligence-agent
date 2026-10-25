@@ -48,7 +48,7 @@ export function Composer({
   };
 
   return (
-    <footer className="shrink-0 border-t bg-background pb-[env(safe-area-inset-bottom)]">
+    <footer className="shrink-0 border-t bg-card pb-[env(safe-area-inset-bottom)]">
       <form
         onSubmit={onSubmit}
         className="mx-auto flex max-w-[800px] items-end gap-2 px-4 py-3"
