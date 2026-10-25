@@ -1,3 +1,4 @@
+import { cn } from 'cn';
 import { ArrowUp, Mic, MicOff, Square } from 'lucide-react';
 import {
   type FormEvent,
@@ -5,7 +6,9 @@ import {
   type RefObject,
   useCallback,
   useEffect,
+  useState,
 } from 'react';
+import { column, gutters } from '@/components/chat/column';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useDictation } from '@/hooks/use-dictation';
@@ -60,11 +63,20 @@ export function Composer({
     }
   };
 
+  // Text fields always match :focus-visible, so the autofocus on load would draw the keyboard ring;
+  // it stays quiet until the field is first left.
+  const [quietFocus, setQuietFocus] = useState(true);
+
   return (
-    <footer className="shrink-0 border-t bg-card pb-[env(safe-area-inset-bottom)]">
+    <footer
+      className={cn(
+        'shrink-0 border-t bg-card pb-[env(safe-area-inset-bottom)]',
+        gutters,
+      )}
+    >
       <form
         onSubmit={onSubmit}
-        className="mx-auto flex max-w-[800px] items-end gap-2 px-4 py-3"
+        className={cn(column, 'flex items-end gap-2 py-3')}
       >
         <label htmlFor="chat-input" className="sr-only">
           Ask a question about US airports
@@ -75,9 +87,11 @@ export function Composer({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={onKeyDown}
+          onBlur={() => setQuietFocus(false)}
+          data-quiet={quietFocus || undefined}
           placeholder="Ask about a US airport"
           rows={1}
-          className="max-h-40 min-h-11 resize-none"
+          className="max-h-40 min-h-11 resize-none bg-card data-quiet:focus-visible:border-input data-quiet:focus-visible:ring-0"
           autoFocus
         />
         {dictation.supported && (
@@ -139,7 +153,7 @@ export function Composer({
       {(dictation.supported || dictation.error) && (
         <p
           role="status"
-          className="mx-auto max-w-[800px] px-4 text-sm text-muted-foreground"
+          className={cn(column, 'text-muted-foreground text-sm')}
         >
           {dictation.error && (
             <span className="-mt-1 block pb-3">{dictation.error}</span>

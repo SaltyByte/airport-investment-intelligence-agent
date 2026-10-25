@@ -1,40 +1,61 @@
 import { useChat } from '@ai-sdk/react';
 import type { AppUIMessage } from '@app/shared';
-import { useRef, useState } from 'react';
+import { cn } from 'cn';
+import { useEffect, useRef, useState } from 'react';
 import { ChatError } from '@/components/chat/chat-error';
 import { ChatHeader } from '@/components/chat/chat-header';
+import { column } from '@/components/chat/column';
 import { Composer } from '@/components/chat/composer';
 import { EmptyState } from '@/components/chat/empty-state';
-import { MessageList, textOf } from '@/components/chat/message-list';
+import { MessageList, verdictOf } from '@/components/chat/message-list';
 import { TypingIndicator } from '@/components/chat/typing-indicator';
-import { useStickToBottom } from '@/hooks/use-stick-to-bottom';
+import { useAnchorLatestQuestion } from '@/hooks/use-anchor-latest-question';
+import { loadSession, saveSession } from '@/session';
 
 export function App() {
   const [announcement, setAnnouncement] = useState('');
-  const { messages, sendMessage, status, error, regenerate, stop } =
-    useChat<AppUIMessage>({
-      // Announce each finished reply once (works for buffered streams too); errors are announced by the alert.
-      onFinish: ({ message, isError, isAbort }) => {
-        if (isError) setAnnouncement('');
-        else if (isAbort) setAnnouncement('Response stopped');
-        else if (message.role === 'assistant')
-          // shortcut: strips common markdown marks only; good enough for a spoken summary.
-          setAnnouncement(textOf(message).replace(/:?-{3,}:?|[*_#`|]/g, ''));
-      },
-    });
-  const [input, setInput] = useState('');
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { scrollRef, onScroll, reattach } = useStickToBottom(
+  const [savedMessages] = useState(() => loadSession());
+  // Set by New chat while a reply runs: its abort lands after the reset and must stay silent.
+  const resetting = useRef(false);
+  const {
     messages,
+    setMessages,
+    sendMessage,
     status,
     error,
-  );
+    clearError,
+    regenerate,
+    stop,
+  } = useChat<AppUIMessage>({
+    messages: savedMessages,
+    // Announce each finished reply once, verdict only (works for buffered streams too); errors
+    // are announced by the alert.
+    onFinish: ({ message, isError, isAbort }) => {
+      if (resetting.current) resetting.current = false;
+      else if (isError) setAnnouncement('');
+      else if (isAbort) setAnnouncement('Response stopped');
+      else if (message.role === 'assistant')
+        setAnnouncement(verdictOf(message));
+    },
+  });
+  const [input, setInput] = useState('');
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const busy = status === 'submitted' || status === 'streaming';
+  const scrollRef = useAnchorLatestQuestion(
+    messages.filter((m) => m.role === 'user').length,
+  );
+
+  // Saved once a reply has settled cleanly (finished or stopped), not on every streamed chunk. A
+  // failed send is not saved, so a reload never restores a question without its Retry.
+  useEffect(() => {
+    if (status === 'ready') saveSession(messages);
+  }, [messages, status]);
 
   const send = (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
-    reattach();
+    // A New chat clicked just after the last reply settled left the flag set; this reply is new.
+    resetting.current = false;
     setAnnouncement('');
     sendMessage({ text: trimmed });
     setInput('');
@@ -42,22 +63,34 @@ export function App() {
   };
 
   const retry = () => {
-    reattach();
     setAnnouncement('');
     regenerate();
     inputRef.current?.focus();
   };
 
+  // No confirmation: a running reply is stopped first, then the conversation and its copy go.
+  const newChat = () => {
+    if (busy) {
+      resetting.current = true;
+      stop();
+    }
+    clearError();
+    setMessages([]);
+    setInput('');
+    setAnnouncement('');
+    inputRef.current?.focus();
+  };
+
   return (
     <div className="flex h-dvh flex-col">
-      <ChatHeader />
+      <ChatHeader busy={busy} onAsk={send} onNewChat={newChat} />
 
       <main
         ref={scrollRef}
-        onScroll={onScroll}
-        className="relative min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable_both-edges]"
+        // Size container: the latest answer's min-height (100cqh) is measured against it.
+        className="relative min-h-0 flex-1 overflow-y-auto [container-type:size] [scrollbar-gutter:stable_both-edges]"
       >
-        <div className="mx-auto flex max-w-[1040px] flex-col gap-6 px-4 py-6">
+        <div className={cn(column, 'flex flex-col gap-10 pb-6')}>
           {messages.length === 0 ? (
             <EmptyState onSelect={send} />
           ) : (
@@ -65,10 +98,14 @@ export function App() {
               messages={messages}
               status={status}
               onFollowUp={send}
+              tail={
+                <>
+                  {busy && <TypingIndicator />}
+                  {error && <ChatError onRetry={retry} />}
+                </>
+              }
             />
           )}
-          {busy && <TypingIndicator />}
-          {error && <ChatError message={error.message} onRetry={retry} />}
         </div>
       </main>
 
