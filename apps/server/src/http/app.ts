@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import type { AppError } from '@app/shared';
 import { type LanguageModel, pipeUIMessageStreamToResponse } from 'ai';
 import express from 'express';
@@ -31,6 +32,10 @@ export const createApp = ({
       (error) => res.status(STATUS[error.kind]).json({ error }),
     );
   });
+
+  // Built web app; when apps/web/dist is absent (dev) requests just fall through.
+  const webDist = fileURLToPath(new URL('../../../web/dist', import.meta.url));
+  app.use(express.static(webDist));
 
   return app;
 };
