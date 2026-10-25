@@ -35,7 +35,7 @@ How badly an airport's departures are held up, measured from observed historical
 _Avoid_: capacity utilisation, busyness
 
 **Unmet demand**:
-The seat gap: extra seats an airport's routes would need so that none runs above the target load factor of 80%. Always an estimate, because demand turned away by full flights is never observed.
+The seat gap: extra seats an airport's routes would need so that none runs above the target load factor of 80%, also stated as extra departures at each route's current average aircraft size. Always an estimate, because demand turned away by full flights is never observed.
 _Avoid_: latent demand, spilled passengers, lost demand
 
 **Data period**:
@@ -57,5 +57,5 @@ A 0–100 measure of congestion: the mean national percentile of the share of de
 _Avoid_: delay score, congestion score
 
 **Expansion score**:
-The 0–100 ranking of a terminal-expansion candidate: Growth 40%, Pressure 40%, Scale 20%, each pillar a national percentile. Pressure is the mean of the load-factor percentile and the congestion index.
+The 0–100 ranking of a terminal-expansion candidate: Growth 40%, Pressure 40%, Scale 20%, each pillar a national percentile. Pressure is the mean of the load-factor percentile and the congestion index. It is the proxy for profitability from added capacity: it ranks where new capacity would be used, not revenue or return on investment.
 _Avoid_: investment score, opportunity score

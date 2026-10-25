@@ -15,40 +15,62 @@ import {
 const DRIVER_PERCENTILE = 75;
 const NAS_SHARE = 25;
 
-type RouteGap = { dest: string; monthsAbove: number; seatsShort: number };
+type RouteGap = {
+  dest: string;
+  monthsAbove: number;
+  seatsShort: number;
+  extraDepartures: number;
+};
 
-/** Seat gap at the target load factor per route × month (carriers summed), totalled over the period. */
+/** Seat gap at the target load factor per route × month (carriers summed), totalled over the period; also as departures at each route-month's average seats per departure. */
 export const routeGaps = (routes: RouteRow[], iata: string) => {
   const months = new Map<
     string,
-    { dest: string; seats: number; passengers: number }
+    { dest: string; departures: number; seats: number; passengers: number }
   >();
   for (const r of routes) {
     if (r.origin !== iata || r.classGroup !== 'passenger') continue;
     const key = `${r.dest}|${r.month}`;
-    const m = months.get(key) ?? { dest: r.dest, seats: 0, passengers: 0 };
+    const m = months.get(key) ?? {
+      dest: r.dest,
+      departures: 0,
+      seats: 0,
+      passengers: 0,
+    };
+    m.departures += r.departures;
     m.seats += r.seats;
     m.passengers += r.passengers;
     months.set(key, m);
   }
   const byDest = new Map<string, RouteGap>();
   let gap = 0;
+  let extraDepartures = 0;
   let monthsAbove = 0;
-  for (const { dest, seats, passengers } of months.values()) {
+  for (const { dest, departures, seats, passengers } of months.values()) {
     const short = seatGap(passengers, seats);
+    // No aircraft size without departures and seats: the month adds seats but no departures.
+    const extra =
+      departures > 0 && seats > 0 ? short / (seats / departures) : 0;
     const above = passengers > seats * TARGET_LOAD_FACTOR ? 1 : 0;
     gap += short;
+    extraDepartures += extra;
     monthsAbove += above;
-    const d = byDest.get(dest) ?? { dest, monthsAbove: 0, seatsShort: 0 };
+    const d = byDest.get(dest) ?? {
+      dest,
+      monthsAbove: 0,
+      seatsShort: 0,
+      extraDepartures: 0,
+    };
     d.monthsAbove += above;
     d.seatsShort += short;
+    d.extraDepartures += extra;
     byDest.set(dest, d);
   }
   const top = [...byDest.values()]
     .filter((d) => d.seatsShort > 0)
     .sort((a, b) => b.seatsShort - a.seatsShort)
     .slice(0, 5);
-  return { gap, monthsAbove, routeMonths: months.size, top };
+  return { gap, extraDepartures, monthsAbove, routeMonths: months.size, top };
 };
 
 export type DriverEvidence = {
@@ -149,6 +171,12 @@ export const estimateUnmetDemand = (
     title: `Unmet demand at ${a.iata} (${a.name})`,
     metrics: [
       { label: 'Seat gap', value: g.gap, unit: 'seats', note: 'estimate' },
+      {
+        label: 'Extra departures needed',
+        value: Math.round(g.extraDepartures),
+        unit: 'count',
+        note: 'estimate',
+      },
       { label: 'Route-months above 80%', value: g.monthsAbove, unit: 'count' },
       {
         label: 'Share of route-months above 80%',
@@ -179,11 +207,13 @@ export const estimateUnmetDemand = (
         { key: 'iata', label: 'Destination' },
         { key: 'monthsAbove', label: 'Months above 80%', unit: 'count' },
         { key: 'seatsShort', label: 'Seats short', unit: 'seats' },
+        { key: 'extraDepartures', label: 'Extra departures', unit: 'count' },
       ],
       rows: g.top.map((d) => ({
         iata: d.dest,
         monthsAbove: d.monthsAbove,
         seatsShort: d.seatsShort,
+        extraDepartures: Math.round(d.extraDepartures),
       })),
     },
     notes: demandDrivers({
@@ -198,6 +228,7 @@ export const estimateUnmetDemand = (
     assumptions: [
       'Target load factor is 80%: seats needed = passengers ÷ 0.8.',
       'Gap is computed per route × month on passenger flights departing the airport (all carriers and aircraft summed), rounded to whole seats, then summed over the period.',
+      "Extra departures = each route-month's seat gap ÷ its average seats per departure, summed and rounded to whole departures; route-months without departures or seats are left out.",
       'The seat gap is an estimate: demand turned away by full flights is never observed.',
       'Drivers fire at: any route-month above 80%; load-factor percentile ≥ 75; congestion index ≥ 75; NAS share of delay-cause minutes ≥ 25%; growth > 0%.',
     ],
@@ -208,7 +239,7 @@ export const estimateUnmetDemand = (
 export const createEstimateUnmetDemandTool = (ctx: ToolContext) =>
   tool({
     description:
-      'Returns the estimated seat gap at one airport, its most under-served routes and the capacity-constraint drivers behind it. Use for questions about unmet or excess demand at an airport and why.',
+      "Returns the estimated seat gap at one airport, also as extra departures at each route's average aircraft size, its most under-served routes and the capacity-constraint drivers behind it. Use for questions about unmet or excess demand at an airport and why.",
     inputSchema: EstimateUnmetDemandInput,
     execute: (input) => roundResult(estimateUnmetDemand(ctx, input)),
   });

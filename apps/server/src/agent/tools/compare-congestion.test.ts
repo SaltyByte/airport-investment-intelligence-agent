@@ -125,5 +125,7 @@ describe('compareCongestion', () => {
       false,
     );
     expect(schema.safeParse({ airports: ['LAX', 'SNA'] }).success).toBe(true);
+    // The national scope is for expansion rankings only.
+    expect(schema.safeParse({ region: 'US' }).success).toBe(false);
   });
 });

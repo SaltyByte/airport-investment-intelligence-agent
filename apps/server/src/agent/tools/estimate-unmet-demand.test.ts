@@ -27,6 +27,13 @@ const row = (
   ...overrides,
 });
 
+// Two aircraft sizes on LAX (100 and 150 seats per departure) and a SEA month with no departures.
+const depRows = [
+  row('LAX', '2026-01', 200, 200, { departures: 2 }), // gap 50 / 100 = 0.5
+  row('LAX', '2026-02', 300, 300, { departures: 2 }), // gap 75 / 150 = 0.5
+  row('SEA', '2026-01', 0, 80, { departures: 0 }), // gap 100, no departures: skipped
+];
+
 describe('routeGaps', () => {
   it('counts exactly 80% and below as no gap', () => {
     const g = routeGaps(
@@ -48,7 +55,15 @@ describe('routeGaps', () => {
       'SFO',
     );
     expect(g).toMatchObject({ gap: 38, routeMonths: 3, monthsAbove: 2 });
-    expect(g.top).toEqual([{ dest: 'LAX', monthsAbove: 2, seatsShort: 38 }]);
+    // Carriers' departures are summed too: 25 / 100 + 13 / 100.
+    expect(g.top).toEqual([
+      {
+        dest: 'LAX',
+        monthsAbove: 2,
+        seatsShort: 38,
+        extraDepartures: expect.closeTo(0.38),
+      },
+    ]);
   });
 
   it('treats passengers on zero seats as fully short', () => {
@@ -71,6 +86,21 @@ describe('routeGaps', () => {
     const rows = dests.map((d, i) => row(`${d}AA`, '2026-01', 100, 81 + i * 2));
     const top = routeGaps(rows, 'SFO').top.map((r) => r.dest);
     expect(top).toEqual(['FAA', 'EAA', 'DAA', 'CAA', 'BAA']);
+  });
+
+  it('converts the seat gap to extra departures at each route-month average aircraft size', () => {
+    const g = routeGaps(depRows, 'SFO');
+    expect(g.gap).toBe(225);
+    expect(g.extraDepartures).toBeCloseTo(1);
+    expect(g.top).toEqual([
+      {
+        dest: 'LAX',
+        monthsAbove: 2,
+        seatsShort: 125,
+        extraDepartures: expect.closeTo(1),
+      },
+      { dest: 'SEA', monthsAbove: 1, seatsShort: 100, extraDepartures: 0 },
+    ]);
   });
 });
 
@@ -163,6 +193,7 @@ describe('estimateUnmetDemand', () => {
     });
     expect(r.metrics.map((m) => m.label)).toEqual([
       'Seat gap',
+      'Extra departures needed',
       'Route-months above 80%',
       'Share of route-months above 80%',
       'Load factor',
@@ -170,13 +201,19 @@ describe('estimateUnmetDemand', () => {
       'NAS share of delay-cause minutes',
       'Passenger growth CY2025 vs CY2024',
     ]);
-    expect(r.metrics[3]).toMatchObject({
+    expect(r.metrics[4]).toMatchObject({
       label: 'Load factor',
       value: 80,
       unit: 'percent',
     });
     expect(r.table?.rows).toEqual([
-      { iata: 'LAX', monthsAbove: 1, seatsShort: 13 },
+      { iata: 'LAX', monthsAbove: 1, seatsShort: 13, extraDepartures: 0 },
+    ]);
+    expect(r.table?.columns.map((c) => c.key)).toEqual([
+      'iata',
+      'monthsAbove',
+      'seatsShort',
+      'extraDepartures',
     ]);
     expect(r.notes?.[0]).toBe(
       '1 of 2 route-months (50.0%) ran above the 80% target load factor.',
@@ -188,6 +225,26 @@ describe('estimateUnmetDemand', () => {
     expect(r.assumptions).toContain(
       'Target load factor is 80%: seats needed = passengers ÷ 0.8.',
     );
+  });
+
+  it('reports extra departures as a whole-number metric and per destination', () => {
+    const s = { ...snapshot([airport('SFO')]), routes: depRows };
+    const r = estimateUnmetDemand(
+      { snapshot: s, kpis: buildNationalKpis(s) },
+      { iata: 'SFO' },
+    );
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.metrics[1]).toEqual({
+      label: 'Extra departures needed',
+      value: 1,
+      unit: 'count',
+      note: 'estimate',
+    });
+    expect(r.table?.rows).toEqual([
+      { iata: 'LAX', monthsAbove: 2, seatsShort: 125, extraDepartures: 1 },
+      { iata: 'SEA', monthsAbove: 1, seatsShort: 100, extraDepartures: 0 },
+    ]);
+    expect(r.assumptions.join(' ')).toMatch(/average seats per departure/);
   });
 
   it('returns NotFound for an unknown airport', () => {

@@ -26,25 +26,30 @@ const MISSING_WORDS: Record<string, string> = {
 
 type Member = { kpi: AirportKpis; catchment: boolean };
 
+// The national ranking shows only the top rows; the rest are counted in the metrics.
+const US_TOP = 20;
+
 const members = (
   input: RankExpansionCandidatesInput,
   kpis: Map<string, AirportKpis>,
 ): Result<Member[], AppError> =>
-  input.region
-    ? ok(
-        resolveRegion(input.region, kpis).map(({ iata, catchment }) => ({
-          kpi: kpis.get(iata) as AirportKpis,
-          catchment,
-        })),
-      )
-    : input.airports
-      ? resolveAirports(input.airports, kpis).map((list) =>
-          list.map((kpi) => ({ kpi, catchment: false })),
+  input.region === 'US'
+    ? ok([...kpis.values()].map((kpi) => ({ kpi, catchment: false })))
+    : input.region
+      ? ok(
+          resolveRegion(input.region, kpis).map(({ iata, catchment }) => ({
+            kpi: kpis.get(iata) as AirportKpis,
+            catchment,
+          })),
         )
-      : err({
-          kind: 'InvalidInput',
-          message: 'Give exactly one of region or airports.',
-        });
+      : input.airports
+        ? resolveAirports(input.airports, kpis).map((list) =>
+            list.map((kpi) => ({ kpi, catchment: false })),
+          )
+        : err({
+            kind: 'InvalidInput',
+            message: 'Give exactly one of region or airports.',
+          });
 
 const pct = (w: number) => `${Math.round(w * 100)}%`;
 
@@ -56,6 +61,7 @@ const assumptions = (
   'Growth = national percentile of FAA enplanement growth; Pressure = mean of the load-factor percentile and the congestion index (mean percentile of share delayed 15+ min, mean departure delay and mean taxi-out); Scale = national percentile of passengers.',
   `Percentiles rank each airport against the national peer set of ${peers} US commercial-service airports.`,
   'Airports missing any input KPI are not scored.',
+  'Expansion score is a demand and capacity-pressure proxy for where added terminal capacity would be used; it does not model revenue, costs or financing, so it ranks likely profitability, not return on investment.',
   ...(input.region === 'New England'
     ? [
         'New England = airports in ME, NH, VT, MA, RI and CT, plus Albany (ALB) as a catchment airport.',
@@ -83,9 +89,11 @@ export const rankExpansionCandidates = (
             a.kpi.iata.localeCompare(b.kpi.iata),
         );
       const excluded = list.filter((m) => m.kpi.expansion.score === null);
+      const us = input.region === 'US';
+      const shown = us ? scored.slice(0, US_TOP) : scored;
       return {
         ok: true,
-        title: `Terminal expansion candidates${input.region ? `: ${input.region}` : ''}`,
+        title: `Terminal expansion candidates${us ? `: US (top ${US_TOP})` : input.region ? `: ${input.region}` : ''}`,
         metrics: [
           { label: 'Airports ranked', value: scored.length, unit: 'count' },
           {
@@ -119,7 +127,7 @@ export const rankExpansionCandidates = (
             },
             { key: 'meanTaxiOut', label: 'Mean taxi-out', unit: 'minutes' },
           ],
-          rows: scored.map(({ kpi, catchment }, i) => ({
+          rows: shown.map(({ kpi, catchment }, i) => ({
             iata: kpi.iata,
             airport: catchment
               ? `${kpi.name} (New England catchment)`
@@ -138,15 +146,20 @@ export const rankExpansionCandidates = (
             meanTaxiOut: kpi.meanTaxiOut,
           })),
         },
-        notes: [
-          ...(list.length === 0
-            ? [`No airports in ${input.region} are in the data.`]
-            : []),
-          ...excluded.map(
-            ({ kpi }) =>
-              `${kpi.iata}: ${[...new Set(kpi.expansion.missing.map((k) => MISSING_WORDS[k] ?? k))].join(', ')}`,
-          ),
-        ],
+        notes: us
+          ? [
+              `The table shows the top ${shown.length} of ${scored.length} scored airports.`,
+              `${excluded.length} airports are not ranked for lack of data.`,
+            ]
+          : [
+              ...(list.length === 0
+                ? [`No airports in ${input.region} are in the data.`]
+                : []),
+              ...excluded.map(
+                ({ kpi }) =>
+                  `${kpi.iata}: ${[...new Set(kpi.expansion.missing.map((k) => MISSING_WORDS[k] ?? k))].join(', ')}`,
+              ),
+            ],
         ...snapshotFooter(snapshot, ['traffic', 'delays', 'growth']),
         assumptions: assumptions(input, kpis.size),
         caveats: [...DELAY_CAVEATS, GROWTH_CAVEAT],
@@ -158,7 +171,7 @@ export const rankExpansionCandidates = (
 export const createRankExpansionCandidatesTool = (ctx: ToolContext) =>
   tool({
     description:
-      'Returns airports in a region or a list ranked by Expansion Score with its Growth, Pressure and Scale pillars, plus airports lacking data. Use for questions about which airports most need terminal expansion.',
+      "Returns airports in a region or a list ranked by Expansion Score with its Growth, Pressure and Scale pillars, plus airports lacking data; region 'US' ranks every US airport and returns the top 20 with counts of scored and unscored airports. Use for questions about which airports most need terminal expansion.",
     inputSchema: RankExpansionCandidatesInput,
     execute: async (input) => roundResult(rankExpansionCandidates(ctx, input)),
   });
