@@ -1,0 +1,34 @@
+import type { AppUIMessage } from '@app/shared';
+import { AirportCard } from '@/components/airport-card';
+import { Markdown } from '@/components/markdown';
+
+export const textOf = (message: AppUIMessage) =>
+  message.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join('\n');
+
+function Message({ message }: { message: AppUIMessage }) {
+  if (message.role === 'user') {
+    return (
+      <div className="ml-auto max-w-[85%] rounded-xl bg-secondary px-4 py-2.5 whitespace-pre-wrap wrap-anywhere">
+        {textOf(message)}
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      {message.parts.map((part, i) => {
+        const key = `${message.id}-${i}`;
+        if (part.type === 'text') {
+          return <Markdown key={key} text={part.text} />;
+        }
+        if (part.type === 'tool-getAirport') {
+          return <AirportCard key={key} part={part} />;
+        }
+        return null;
+      })}
+    </div>
+  );
+}
+
+export function MessageList({ messages }: { messages: AppUIMessage[] }) {
+  return messages.map((m) => <Message key={m.id} message={m} />);
+}
