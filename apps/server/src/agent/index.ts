@@ -8,7 +8,7 @@ import {
   toUIMessageStream,
 } from 'ai';
 import { errAsync, okAsync, ResultAsync } from 'neverthrow';
-import { INSTRUCTIONS, MAX_STEPS } from './instructions';
+import { buildInstructions, MAX_STEPS } from './instructions';
 import { createTools, type ToolContext } from './tools';
 
 const invalidInput = (message: string): AppError => ({
@@ -41,7 +41,7 @@ export const streamChat = (
       toUIMessageStream({
         stream: streamText({
           model,
-          instructions: INSTRUCTIONS,
+          instructions: buildInstructions(ctx),
           messages: modelMessages,
           tools,
           stopWhen: [

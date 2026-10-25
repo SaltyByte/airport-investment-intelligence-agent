@@ -8,6 +8,9 @@ import { roundResult, snapshotFooter } from './result';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
+export const LONG_HAUL_SHARE_METHOD =
+  'Share = long-haul departures performed ÷ all departures performed from the airport.';
+
 const shareMetric = (label: string, rows: RouteRow[]) => {
   const { longHaul, total, share } = longHaulShare(rows);
   return {
@@ -93,7 +96,7 @@ export const getLongHaulShare = (
         ...snapshotFooter(snapshot, ['traffic']),
         assumptions: [
           `Long-haul flight = segment distance of at least ${fmt(LONG_HAUL_MILES)} statute miles.`,
-          'Share = long-haul departures performed ÷ all departures performed from the airport.',
+          LONG_HAUL_SHARE_METHOD,
           'Passenger flights = scheduled and charter passenger service; cargo flights = all-cargo service.',
         ],
         caveatBadge: 'Snapshot period only',

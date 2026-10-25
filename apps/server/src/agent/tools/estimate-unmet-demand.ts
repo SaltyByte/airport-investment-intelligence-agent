@@ -15,6 +15,9 @@ import {
 const DRIVER_PERCENTILE = 75;
 const NAS_SHARE = 25;
 
+export const UNMET_GAP_METHOD =
+  'Gap is computed per route × month on passenger flights departing the airport (all carriers and aircraft summed), rounded to whole seats, then summed over the period.';
+
 type RouteGap = {
   dest: string;
   monthsAbove: number;
@@ -248,7 +251,7 @@ export const estimateUnmetDemand = (
     ...snapshotFooter(snapshot, ['traffic', 'delays', 'growth']),
     assumptions: [
       'Target load factor is 80%: seats needed = passengers ÷ 0.8.',
-      'Gap is computed per route × month on passenger flights departing the airport (all carriers and aircraft summed), rounded to whole seats, then summed over the period.',
+      UNMET_GAP_METHOD,
       "Extra departures = each route-month's seat gap ÷ its average seats per departure, summed and rounded to whole departures; route-months without departures or seats are left out.",
       'The seat gap is an estimate: demand turned away by full flights is never observed.',
       'Drivers fire at: any route-month above 80%; load-factor percentile ≥ 75; congestion index ≥ 75; NAS share of delay-cause minutes ≥ 25%; growth > 0%.',

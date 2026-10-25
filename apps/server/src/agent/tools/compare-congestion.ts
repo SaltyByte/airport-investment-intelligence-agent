@@ -62,6 +62,9 @@ const row = (
   security: a.causeShares?.security ?? null,
 });
 
+export const CONGESTION_INDEX_METHOD =
+  'Congestion index: mean national percentile of the share of departures delayed 15 minutes or more, the mean departure delay and the mean taxi-out time (0-100, higher is more congested).';
+
 /** Congestion comparison for 2-10 airports or a region; most congested first, no-index airports last. */
 export const compareCongestion = (
   ctx: ToolContext,
@@ -161,7 +164,7 @@ export const compareCongestion = (
     notes,
     ...snapshotFooter(ctx.snapshot, ['delays']),
     assumptions: [
-      'Congestion index: mean national percentile of the share of departures delayed 15 minutes or more, the mean departure delay and the mean taxi-out time (0-100, higher is more congested).',
+      CONGESTION_INDEX_METHOD,
       'Cancellations and the delay-cause mix (share of cause minutes) are shown to explain congestion but are not scored.',
       ...(input.region === 'New England'
         ? [

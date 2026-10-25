@@ -51,17 +51,22 @@ const members = (
             message: 'Give exactly one of region or airports.',
           });
 
-const pct = (w: number) => `${Math.round(w * 100)}%`;
+export const pct = (w: number) => `${Math.round(w * 100)}%`;
 
-const assumptions = (
-  input: RankExpansionCandidatesInput,
-  peers: number,
-): string[] => [
+/** How the expansion score is built; shared by the tool card and the system prompt. */
+export const expansionMethod = (peers: number): string[] => [
   `Expansion score = ${pct(EXPANSION_WEIGHTS.growth)} Growth + ${pct(EXPANSION_WEIGHTS.pressure)} Pressure + ${pct(EXPANSION_WEIGHTS.scale)} Scale, each 0-100.`,
   'Growth = national percentile of FAA enplanement growth; Pressure = mean of the load-factor percentile and the congestion index (mean percentile of share delayed 15+ min, mean departure delay and mean taxi-out); Scale = national percentile of passengers.',
   `Percentiles rank each airport against the national peer set of ${peers} US commercial-service airports.`,
   'Airports missing any input KPI are not scored.',
   'Expansion score is a demand and capacity-pressure proxy for where added terminal capacity would be used; it does not model revenue, costs or financing, so it ranks likely profitability, not return on investment.',
+];
+
+const assumptions = (
+  input: RankExpansionCandidatesInput,
+  peers: number,
+): string[] => [
+  ...expansionMethod(peers),
   ...(input.region === 'New England'
     ? [
         'New England = airports in ME, NH, VT, MA, RI and CT, plus Albany (ALB) as a catchment airport.',
