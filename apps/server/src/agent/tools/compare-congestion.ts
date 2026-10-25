@@ -7,7 +7,13 @@ import { tool } from 'ai';
 import type { AirportKpis } from '../../kpis/airport-kpis';
 import type { ToolContext } from './index';
 import { resolveAirports, resolveRegion } from './regions';
-import { DELAY_CAVEATS, round, roundResult, snapshotFooter } from './result';
+import {
+  DELAY_CAVEATS,
+  gapNote,
+  round,
+  roundResult,
+  snapshotFooter,
+} from './result';
 
 const COLUMNS: ToolTable['columns'] = [
   { key: 'iata', label: 'Code' },
@@ -99,7 +105,9 @@ export const compareCongestion = (
   if (resolved.isErr()) return { ok: false, error: resolved.error };
 
   const airports = [...resolved.value].sort(
-    (a, b) => (b.congestionIndex ?? -1) - (a.congestionIndex ?? -1),
+    (a, b) =>
+      (b.congestionIndex ?? -1) - (a.congestionIndex ?? -1) ||
+      a.iata.localeCompare(b.iata),
   );
   // Sorted, so the first airport with an index is the most congested and the second the runner-up.
   const indexed = airports.filter((a) => a.congestionIndex !== null);
@@ -122,6 +130,24 @@ export const compareCongestion = (
   const runnerUp = next
     ? `; ${(topIdx - nextIdx).toFixed(1)} points above ${next.iata} (${nextIdx.toFixed(1)})`
     : '';
+  if (top && next) {
+    // The index is the mean of three percentiles, so each contributes its difference ÷ 3.
+    const part = (k: 'delayed15Share' | 'meanDepDelay' | 'meanTaxiOut') =>
+      ((top.percentiles[k] ?? 0) - (next.percentiles[k] ?? 0)) / 3;
+    notes.push(
+      gapNote(
+        topIdx - nextIdx,
+        (points) =>
+          `${top.iata}'s congestion index is ${points} points above ${next.iata}'s`,
+        `${top.iata} and ${next.iata} have the same congestion index (${topIdx.toFixed(1)}); ${top.iata} is listed first by airport code`,
+        [
+          ['delayed 15+ min share', part('delayed15Share')],
+          ['mean departure delay', part('meanDepDelay')],
+          ['mean taxi-out', part('meanTaxiOut')],
+        ],
+      ),
+    );
+  }
 
   return {
     ok: true,
@@ -186,7 +212,7 @@ export const compareCongestion = (
 export const createCompareCongestionTool = (ctx: ToolContext) =>
   tool({
     description:
-      'Returns the congestion index, delay, taxi-out, cancellation and delay-cause figures for 2-10 airports or every airport in a region, most congested first. Use to compare how congested airports are.',
+      'Returns the congestion index, delay, taxi-out, cancellation and delay-cause figures for 2-10 airports or every airport in a region, most congested first, and, in points per component, why the most congested leads the next. Use to compare how congested airports are.',
     inputSchema: CompareCongestionInput,
     execute: async (input) => roundResult(compareCongestion(ctx, input)),
   });

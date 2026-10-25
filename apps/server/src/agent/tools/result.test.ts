@@ -1,7 +1,7 @@
 import { ToolResult } from '@app/shared';
 import { describe, expect, it } from 'vitest';
 import { snapshot } from '../../test/fixtures';
-import { roundResult, snapshotFooter } from './result';
+import { gapNote, roundResult, snapshotFooter } from './result';
 
 describe('snapshotFooter', () => {
   it("names each used source's own period in plain words", () => {
@@ -25,6 +25,47 @@ describe('snapshotFooter', () => {
       source: 'BTS T-100 Segment',
       period: 'Traffic Aug 2025–Jul 2026',
     });
+  });
+});
+
+describe('gapNote', () => {
+  const lead = (points: string) => `BGR leads BOS by ${points} points`;
+
+  it('lists signed parts largest first to 1 decimal', () => {
+    expect(
+      gapNote(12.9, lead, 'tied', [
+        ['Growth', 19.2],
+        ['Pressure', -1.16],
+        ['Scale', -5.14],
+      ]),
+    ).toBe(
+      'BGR leads BOS by 12.9 points: Growth +19.2, Scale −5.1, Pressure −1.2.',
+    );
+  });
+
+  it('signs by the displayed value, so tiny negatives show as +0.0', () => {
+    expect(
+      gapNote(0.1, lead, 'tied', [
+        ['A', 0.14],
+        ['B', -0.04],
+      ]),
+    ).toBe('BGR leads BOS by 0.1 points: A +0.1, B +0.0.');
+  });
+
+  it('uses the tie wording when the gap shows as 0.0', () => {
+    expect(
+      gapNote(
+        0.0001,
+        lead,
+        'BGR and BOS are tied at 50.0; BGR ranks first on Scale',
+        [
+          ['Scale', 2],
+          ['Growth', -2],
+        ],
+      ),
+    ).toBe(
+      'BGR and BOS are tied at 50.0; BGR ranks first on Scale: Scale +2.0, Growth −2.0.',
+    );
   });
 });
 

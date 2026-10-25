@@ -12,6 +12,7 @@ import { resolveAirports, resolveRegion } from './regions';
 import {
   DELAY_CAVEATS,
   GROWTH_CAVEAT,
+  gapNote,
   roundResult,
   snapshotFooter,
 } from './result';
@@ -97,6 +98,30 @@ export const rankExpansionCandidates = (
       const us = input.region === 'US';
       const shown = us ? scored.slice(0, US_TOP) : scored;
       const first = scored[0]?.kpi;
+      const second = scored[1]?.kpi;
+      // Pillar contribution to the score gap = weight × pillar difference.
+      const pillar = (
+        a: AirportKpis,
+        b: AirportKpis,
+        k: 'growth' | 'pressure' | 'scale',
+      ) =>
+        EXPANSION_WEIGHTS[k] * ((a.expansion[k] ?? 0) - (b.expansion[k] ?? 0));
+      const gap =
+        first && second
+          ? [
+              gapNote(
+                (first.expansion.score ?? 0) - (second.expansion.score ?? 0),
+                (points) =>
+                  `${first.iata} leads ${second.iata} by ${points} points`,
+                `${first.iata} and ${second.iata} are tied at ${second.expansion.score?.toFixed(1)}; ${first.iata} ranks first ${first.expansion.scale === second.expansion.scale ? 'by airport code' : 'on Scale'}`,
+                [
+                  ['Growth', pillar(first, second, 'growth')],
+                  ['Pressure', pillar(first, second, 'pressure')],
+                  ['Scale', pillar(first, second, 'scale')],
+                ],
+              ),
+            ]
+          : [];
       // One note per reason: "2 not ranked (no delay data): EWB, EWC".
       const byReason = new Map<string, string[]>();
       for (const { kpi } of excluded) {
@@ -184,20 +209,23 @@ export const rankExpansionCandidates = (
             meanTaxiOut: kpi.meanTaxiOut,
           })),
         },
-        notes: us
-          ? [
-              `The table shows the top ${shown.length} of ${scored.length} scored airports.`,
-              `${excluded.length} airports are not ranked for lack of data.`,
-            ]
-          : [
-              ...(list.length === 0
-                ? [`No airports in ${input.region} are in the data.`]
-                : []),
-              ...[...byReason].map(
-                ([reason, codes]) =>
-                  `${codes.length} not ranked (${reason}): ${codes.join(', ')}`,
-              ),
-            ],
+        notes: [
+          ...(us
+            ? [
+                `The table shows the top ${shown.length} of ${scored.length} scored airports.`,
+                `${excluded.length} airports are not ranked for lack of data.`,
+              ]
+            : [
+                ...(list.length === 0
+                  ? [`No airports in ${input.region} are in the data.`]
+                  : []),
+                ...[...byReason].map(
+                  ([reason, codes]) =>
+                    `${codes.length} not ranked (${reason}): ${codes.join(', ')}`,
+                ),
+              ]),
+          ...gap,
+        ],
         ...snapshotFooter(snapshot, ['traffic', 'delays', 'growth']),
         assumptions: assumptions(input, kpis.size),
         caveatBadge: 'Profitability proxy, not ROI',
@@ -210,7 +238,7 @@ export const rankExpansionCandidates = (
 export const createRankExpansionCandidatesTool = (ctx: ToolContext) =>
   tool({
     description:
-      "Returns airports in a region or a list ranked by Expansion Score with its Growth, Pressure and Scale pillars, plus airports lacking data; region 'US' ranks every US airport and returns the top 20 with counts of scored and unscored airports. Use for questions about which airports most need terminal expansion.",
+      "Returns airports in a region or a list ranked by Expansion Score with its Growth, Pressure and Scale pillars, plus airports lacking data and, in points per pillar, why the top airport leads the next; region 'US' ranks every US airport and returns the top 20 with counts of scored and unscored airports. Use for questions about which airports most need terminal expansion.",
     inputSchema: RankExpansionCandidatesInput,
     execute: async (input) => roundResult(rankExpansionCandidates(ctx, input)),
   });

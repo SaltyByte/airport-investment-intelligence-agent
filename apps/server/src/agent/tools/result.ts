@@ -68,6 +68,25 @@ export const round = <T>(value: T, unit: ToolUnit | undefined): T => {
   return (Math.round(value * f) / f) as T;
 };
 
+/**
+ * One note splitting the gap between the top two airports into signed parts, largest first, 1 decimal.
+ * Parts are rounded for display, so their sum may differ from the gap by up to 0.2; a gap that shows as 0.0 uses `tie`.
+ */
+export const gapNote = (
+  gap: number,
+  lead: (points: string) => string,
+  tie: string,
+  parts: [label: string, points: number][],
+): string => {
+  const text = [...parts]
+    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+    .map(([label, p]) => {
+      const r = round(p, 'score');
+      return `${label} ${r < 0 ? '−' : '+'}${Math.abs(r).toFixed(1)}`;
+    });
+  return `${round(gap, 'score') === 0 ? tie : lead(gap.toFixed(1))}: ${text.join(', ')}.`;
+};
+
 /** Rounds metric values, percentiles, table cells and the headline by unit so the model quotes display-ready numbers. */
 export const roundResult = (result: ToolResult): ToolResult => {
   if (!result.ok) return result;

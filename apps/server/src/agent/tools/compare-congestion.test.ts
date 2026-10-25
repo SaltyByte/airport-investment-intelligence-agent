@@ -93,6 +93,45 @@ describe('compareCongestion', () => {
     const r = compareCongestion(ctx, { airports: ['BUR', 'LAX'] });
     if (!r.ok) throw new Error(r.error.message);
     expect(r.headline?.context).toBe('Most congested of 1, 1 without data');
+    expect(r.notes).toEqual([
+      'BUR: no on-time data: no US reporting carrier operates there.',
+      'LAX is the most congested by congestion index.',
+    ]);
+  });
+
+  it('explains the gap between the two most congested in component points', () => {
+    const r = compareCongestion(ctx, { airports: ['ONT', 'LAX'] });
+    if (!r.ok) throw new Error(r.error.message);
+    const lax = ctx.kpis.get('LAX');
+    const ont = ctx.kpis.get('ONT');
+    if (!lax || !ont) throw new Error('fixture');
+    const r1 = (n: number | null) => Math.round((n ?? 0) * 10) / 10;
+    const signed = (n: number) =>
+      `${Math.round(n * 10) < 0 ? '−' : '+'}${Math.abs(n).toFixed(1)}`;
+    const part = (k: keyof typeof lax.percentiles) =>
+      ((lax.percentiles[k] ?? 0) - (ont.percentiles[k] ?? 0)) / 3;
+    const parts: [string, number][] = [
+      ['delayed 15+ min share', part('delayed15Share')],
+      ['mean departure delay', part('meanDepDelay')],
+      ['mean taxi-out', part('meanTaxiOut')],
+    ];
+    parts.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+    expect(r.notes).toEqual([
+      'LAX is the most congested by congestion index.',
+      `LAX's congestion index is ${(r1(lax.congestionIndex) - r1(ont.congestionIndex)).toFixed(1)} points above ONT's: ${parts.map(([l, v]) => `${l} ${signed(v)}`).join(', ')}.`,
+    ]);
+  });
+
+  it('names the tie-break when the two most congested have the same index', () => {
+    const s = snapshot([airport('SNA'), airport('LAX')]);
+    const r = compareCongestion(
+      { snapshot: s, kpis: buildNationalKpis(s) },
+      { airports: ['SNA', 'LAX'] },
+    );
+    if (!r.ok) throw new Error(r.error.message);
+    expect(r.notes?.[1]).toMatch(
+      /^LAX and SNA have the same congestion index \(\d+\.\d\); LAX is listed first by airport code: /,
+    );
   });
 
   it('counts only airports with an index and omits "without data" when all have one', () => {

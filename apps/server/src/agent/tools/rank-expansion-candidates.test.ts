@@ -83,7 +83,10 @@ describe('rankExpansionCandidates', () => {
       { key: 'meanTaxiOut', label: 'Mean taxi-out', unit: 'minutes' },
     ]);
     expect(result.metrics.map((m) => m.value)).toEqual([4, 1]);
-    expect(result.notes).toEqual(['1 not ranked (no delay data): EWB']);
+    expect(result.notes).toEqual([
+      '1 not ranked (no delay data): EWB',
+      expect.stringMatching(/^BOS leads ALB by \d+\.\d points: /),
+    ]);
     expect(result.assumptions.join(' ')).toContain('ALB');
   });
 
@@ -98,6 +101,39 @@ describe('rankExpansionCandidates', () => {
     const result = rankExpansionCandidates(ctx, { airports: ['PVD', 'BOS'] });
     if (!result.ok) throw new Error('expected ok');
     expect(result.headline?.context).toBe('Ranked 1 of 2');
+  });
+
+  it('explains the lead of #1 over #2 in weighted pillar points', () => {
+    const result = rankExpansionCandidates(ctx, { airports: ['PVD', 'BOS'] });
+    if (!result.ok) throw new Error('expected ok');
+    const bos = ctx.kpis.get('BOS')?.expansion;
+    const pvd = ctx.kpis.get('PVD')?.expansion;
+    if (!bos || !pvd) throw new Error('fixture');
+    const signed = (n: number) =>
+      `${Math.round(n * 10) < 0 ? '−' : '+'}${Math.abs(n).toFixed(1)}`;
+    const parts: [string, number][] = [
+      ['Growth', 0.4 * ((bos.growth ?? 0) - (pvd.growth ?? 0))],
+      ['Pressure', 0.4 * ((bos.pressure ?? 0) - (pvd.pressure ?? 0))],
+      ['Scale', 0.2 * ((bos.scale ?? 0) - (pvd.scale ?? 0))],
+    ];
+    parts.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+    expect(result.notes).toEqual([
+      `BOS leads PVD by ${((bos.score ?? 0) - (pvd.score ?? 0)).toFixed(1)} points: ${parts.map(([l, v]) => `${l} ${signed(v)}`).join(', ')}.`,
+    ]);
+  });
+
+  it('names the tie-break when the top two scores are equal', () => {
+    const s = snapshot([airport('BBB'), airport('AAA')]);
+    const result = rankExpansionCandidates(
+      { snapshot: s, kpis: buildNationalKpis(s) },
+      { airports: ['BBB', 'AAA'] },
+    );
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.notes).toEqual([
+      expect.stringMatching(
+        /^AAA and BBB are tied at \d+\.\d; AAA ranks first by airport code: Growth \+0\.0, Pressure \+0\.0, Scale \+0\.0\.$/,
+      ),
+    ]);
   });
 
   it('groups not-ranked airports into one note per reason', () => {
@@ -152,6 +188,7 @@ describe('rankExpansionCandidates', () => {
     expect(result.notes).toEqual([
       'The table shows the top 20 of 23 scored airports.',
       '2 airports are not ranked for lack of data.',
+      expect.stringMatching(/^AWA leads [A-Z]{3} by \d+\.\d points: /),
     ]);
     expect(result.headline?.context).toBe('Ranked 1 of 23, 2 not ranked');
   });
