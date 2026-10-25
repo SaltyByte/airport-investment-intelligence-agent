@@ -23,18 +23,20 @@ loadConfig(process.env)
       if (stale) console.warn(stale);
       const deepseek = createDeepSeek({ apiKey: config.DEEPSEEK_API_KEY });
       // Express 5 passes listen errors (e.g. EADDRINUSE) to this callback.
-      createApp({ model: deepseek(config.DEEPSEEK_MODEL), ctx }).listen(
-        config.SERVER_PORT,
-        (error) => {
-          if (error) {
-            console.error(`server failed to start: ${error.message}`);
-            process.exit(1);
-          }
-          console.log(
-            `server listening on http://localhost:${config.SERVER_PORT}`,
-          );
-        },
-      );
+      const server = createApp({
+        model: deepseek(config.DEEPSEEK_MODEL),
+        ctx,
+      }).listen(config.SERVER_PORT, (error) => {
+        if (error) {
+          console.error(`server failed to start: ${error.message}`);
+          process.exit(1);
+        }
+        console.log(
+          `server listening on http://localhost:${config.SERVER_PORT}`,
+        );
+      });
+      // PID 1 in the container gets no default SIGTERM action; close so deploys stop promptly.
+      process.on('SIGTERM', () => server.close(() => process.exit(0)));
     },
     (message) => {
       console.error(message);

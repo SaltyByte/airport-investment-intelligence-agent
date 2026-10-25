@@ -6,4 +6,5 @@ COPY . .
 RUN pnpm install --frozen-lockfile && pnpm --filter web build
 ENV NODE_ENV=production SERVER_PORT=8080
 EXPOSE 8080
-CMD ["pnpm", "--filter", "server", "start"]
+WORKDIR /app/apps/server
+CMD ["node", "--import", "tsx", "src/main.ts"]
