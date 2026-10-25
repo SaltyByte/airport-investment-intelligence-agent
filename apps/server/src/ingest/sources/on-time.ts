@@ -23,7 +23,6 @@ const ON_TIME_FIELDS = new Set([
   'LateAircraftDelay',
 ]);
 
-/** Latest PREZIP month, probing back from the current month until a file exists. */
 export const latestOnTimeMonth = async (): Promise<string> => {
   const now = new Date();
   for (let back = 0; back < 12; back++) {
@@ -42,7 +41,6 @@ export const latestOnTimeMonth = async (): Promise<string> => {
   throw new Error('no PREZIP file in the last 12 months');
 };
 
-/** Downloads (cached) one PREZIP month and streams it into delay sums. */
 export const loadOnTime = async (month: string) => {
   const path = await cached(`ontime-${month}.zip`, () =>
     fetch(ON_TIME_URL(month), {
