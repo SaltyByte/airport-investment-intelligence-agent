@@ -25,10 +25,10 @@ export function Composer({
   busy: boolean;
   onStop: () => void;
 }) {
-  // When a reply ends React reuses this same <button> as the Send button and detaches the ref.
-  // Send is disabled while the input is empty, which would drop focus to <body>, so the ref
-  // cleanup hands focus to the input if the button held it.
-  const stopButtonRef = useCallback(
+  // Buttons that leave while focused would drop focus to <body>: the Stop button when a reply
+  // ends (React reuses it as a disabled Send) and the mic when dictation turns out unavailable.
+  // The ref cleanup hands focus to the input if the button held it.
+  const focusInputOnDetach = useCallback(
     (node: HTMLButtonElement | null) => {
       return () => {
         if (node && document.activeElement === node) inputRef.current?.focus();
@@ -82,6 +82,7 @@ export function Composer({
         />
         {dictation.supported && (
           <Button
+            ref={focusInputOnDetach}
             type="button"
             variant="outline"
             size="icon"
@@ -108,7 +109,7 @@ export function Composer({
         )}
         {busy ? (
           <Button
-            ref={stopButtonRef}
+            ref={focusInputOnDetach}
             type="button"
             size="icon"
             className="size-11 motion-safe:active:scale-95"
@@ -135,7 +136,7 @@ export function Composer({
           </Button>
         )}
       </form>
-      {dictation.supported && (
+      {(dictation.supported || dictation.error) && (
         <p
           role="status"
           className="mx-auto max-w-[800px] px-4 text-sm text-muted-foreground"

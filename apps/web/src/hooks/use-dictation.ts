@@ -19,6 +19,9 @@ type RecognitionCtor = new () => Recognition;
 const BLOCKED =
   'Microphone access is blocked. Allow it in the browser to dictate.';
 const STOPPED = 'Dictation stopped. Try again.';
+// Chromium builds without Google's speech service (e.g. Electron) fail every session this way.
+const UNAVAILABLE =
+  "Voice input isn't available in this browser. Try Chrome or Safari.";
 
 /** Starts one utterance; every result reports the draft `base` plus everything heard so far. */
 export function startRecognition(
@@ -26,7 +29,8 @@ export function startRecognition(
   base: string,
   handlers: {
     onText: (text: string) => void;
-    onError: (message: string) => void;
+    /** `unavailable`: retrying can't help, so the caller should stop offering dictation. */
+    onError: (message: string, unavailable: boolean) => void;
     onEnd: () => void;
   },
 ): Recognition {
@@ -45,10 +49,12 @@ export function startRecognition(
     );
   rec.onerror = (e) => {
     if (e.error === 'no-speech' || e.error === 'aborted') return;
+    if (e.error === 'network') return handlers.onError(UNAVAILABLE, true);
     handlers.onError(
       e.error === 'not-allowed' || e.error === 'service-not-allowed'
         ? BLOCKED
         : STOPPED,
+      false,
     );
   };
   rec.onend = handlers.onEnd;
@@ -61,11 +67,12 @@ function recognitionCtor(): RecognitionCtor | undefined {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition;
 }
 
-/** Browser speech-to-text into a draft. `toggle(draft)` starts or stops; `cancel` drops the session. */
+/** Browser speech-to-text into a draft. `toggle(draft)` starts or stops; `cancel` drops the session and its error. */
 export function useDictation(onText: (text: string) => void) {
   const [Ctor] = useState(recognitionCtor);
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
   const recRef = useRef<Recognition | null>(null);
   const onTextRef = useRef(onText);
   useEffect(() => {
@@ -93,7 +100,10 @@ export function useDictation(onText: (text: string) => void) {
     try {
       recRef.current = startRecognition(Ctor, draft, {
         onText: (text) => onTextRef.current(text),
-        onError: setError,
+        onError: (message, isUnavailable) => {
+          setError(message);
+          if (isUnavailable) setUnavailable(true);
+        },
         onEnd: () => {
           recRef.current = null;
           setListening(false);
@@ -105,5 +115,11 @@ export function useDictation(onText: (text: string) => void) {
     }
   };
 
-  return { supported: Boolean(Ctor), listening, error, toggle, cancel };
+  return {
+    supported: Boolean(Ctor) && !unavailable,
+    listening,
+    error,
+    toggle,
+    cancel,
+  };
 }

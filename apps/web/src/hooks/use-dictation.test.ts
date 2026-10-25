@@ -65,17 +65,23 @@ describe('startRecognition', () => {
     [
       'not-allowed',
       'Microphone access is blocked. Allow it in the browser to dictate.',
+      false,
     ],
     [
       'service-not-allowed',
       'Microphone access is blocked. Allow it in the browser to dictate.',
+      false,
     ],
-    ['network', 'Dictation stopped. Try again.'],
-    ['audio-capture', 'Dictation stopped. Try again.'],
-  ])('maps %s to its message', (error, message) => {
+    [
+      'network',
+      "Voice input isn't available in this browser. Try Chrome or Safari.",
+      true,
+    ],
+    ['audio-capture', 'Dictation stopped. Try again.', false],
+  ])('maps %s to its message', (error, message, unavailable) => {
     const { rec, onError } = setup('');
     rec.onerror?.({ error });
-    expect(onError).toHaveBeenCalledWith(message);
+    expect(onError).toHaveBeenCalledWith(message, unavailable);
   });
 
   it.each(['no-speech', 'aborted'])('ignores %s silently', (error) => {
