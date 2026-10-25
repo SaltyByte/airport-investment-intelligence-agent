@@ -15,11 +15,7 @@ export const STATE_CODES = [
   'DC', 'PR',
 ] as const;
 
-export const Region = z
-  .enum([...STATE_CODES, 'New England', 'LA basin'])
-  .describe(
-    "A US state code (e.g. CA), 'New England' or 'LA basin' (LAX, BUR, LGB, ONT, SNA).",
-  );
+export const Region = z.enum([...STATE_CODES, 'New England', 'LA basin']);
 export type Region = z.infer<typeof Region>;
 
 export const AirportList = z.array(Iata).min(1).max(10);

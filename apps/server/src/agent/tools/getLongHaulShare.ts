@@ -103,7 +103,7 @@ export const getLongHaulShare = (
 ) =>
   tool({
     description:
-      'Long-haul share (segment ≥ 3,000 miles) of departures from one airport over the 12-month traffic period, for all, passenger and cargo flights, with top long-haul destinations. Use for questions about long-haul or long-distance flights out of an airport.',
+      'Returns the long-haul share of departures from one airport for all, passenger and cargo flights, with its top long-haul destinations. Use for questions about long-haul flights out of an airport.',
     inputSchema: GetLongHaulShareInput,
     execute: async ({ iata }) =>
       roundResult(longHaulReport(snapshot, kpis, iata)),

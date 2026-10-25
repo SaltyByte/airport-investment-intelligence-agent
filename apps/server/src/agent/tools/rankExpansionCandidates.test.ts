@@ -36,6 +36,14 @@ describe('rankExpansionCandidates', () => {
       meanDepDelay: 10,
       meanTaxiOut: 15,
     });
+    expect(rows[0]?.loadFactor).toBe(
+      (ctx.kpis.get('BOS')?.loadFactor ?? 0) * 100,
+    );
+    expect(result.table?.columns.find((c) => c.key === 'loadFactor')).toEqual({
+      key: 'loadFactor',
+      label: 'Load factor',
+      unit: 'percent',
+    });
     expect(result.table?.columns.slice(0, 3).map((c) => c.key)).toEqual([
       'iata',
       'airport',

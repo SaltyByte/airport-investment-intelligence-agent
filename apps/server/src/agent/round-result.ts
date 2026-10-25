@@ -6,7 +6,6 @@ const DECIMALS: Record<ToolUnit, number> = {
   minutes: 1,
   score: 1,
   percentile: 1,
-  ratio: 3,
   count: 0,
   seats: 0,
   miles: 0,

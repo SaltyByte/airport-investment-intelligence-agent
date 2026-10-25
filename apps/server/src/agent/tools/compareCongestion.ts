@@ -149,7 +149,7 @@ export const compareCongestion = (
 export const compareCongestionTool = (ctx: ToolContext) =>
   tool({
     description:
-      "Compare congestion (delays, taxi-out, cancellations, delay causes) between 2-10 airports or across a region. 'LA' means LAX; use the 'LA basin' region only when the user asks about the LA basin.",
+      'Returns the congestion index, delay, taxi-out, cancellation and delay-cause figures for 2-10 airports or every airport in a region, most congested first. Use to compare how congested airports are.',
     inputSchema: CompareCongestionInput,
     execute: async (input) => roundResult(compareCongestion(ctx, input)),
   });

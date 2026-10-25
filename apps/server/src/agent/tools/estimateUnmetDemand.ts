@@ -153,8 +153,8 @@ export const estimateUnmetDemand = (
       },
       {
         label: 'Load factor',
-        value: a.loadFactor,
-        unit: 'ratio',
+        value: a.loadFactor === null ? null : a.loadFactor * 100,
+        unit: 'percent',
         percentile: a.percentiles.loadFactor,
       },
       { label: 'Congestion index', value: a.congestionIndex, unit: 'score' },
@@ -192,7 +192,7 @@ export const estimateUnmetDemand = (
     }),
     ...snapshotFooter(snapshot, ['traffic', 'delays', 'growth']),
     assumptions: [
-      'Target load factor is 80%: seats needed = passengers ÷ 0.80.',
+      'Target load factor is 80%: seats needed = passengers ÷ 0.8.',
       'Gap is computed per route × month on passenger flights departing the airport (all carriers and aircraft summed), rounded to whole seats, then summed over the period.',
       'The seat gap is an estimate: demand turned away by full flights is never observed.',
       'Drivers fire at: any route-month above 80%; load-factor percentile ≥ 75; congestion index ≥ 75; NAS share of delay-cause minutes ≥ 25%; growth > 0%.',
@@ -204,7 +204,7 @@ export const estimateUnmetDemand = (
 export const estimateUnmetDemandTool = (ctx: ToolContext) =>
   tool({
     description:
-      'Estimate unmet flight demand at one airport (the seat gap at an 80% target load factor) and the capacity-constraint drivers behind it. Use for questions like "What is the unmet demand at SFO and why?".',
+      'Returns the estimated seat gap at one airport, its most under-served routes and the capacity-constraint drivers behind it. Use for questions about unmet or excess demand at an airport and why.',
     inputSchema: EstimateUnmetDemandInput,
     execute: ({ iata }) => roundResult(estimateUnmetDemand(ctx, iata)),
   });

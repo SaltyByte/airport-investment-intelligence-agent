@@ -170,6 +170,11 @@ describe('estimateUnmetDemand', () => {
       'NAS share of delay-cause minutes',
       'Passenger growth CY2025 vs CY2024',
     ]);
+    expect(r.metrics[3]).toMatchObject({
+      label: 'Load factor',
+      value: 80,
+      unit: 'percent',
+    });
     expect(r.table?.rows).toEqual([
       { iata: 'LAX', monthsAbove: 1, seatsShort: 13 },
     ]);
@@ -180,6 +185,9 @@ describe('estimateUnmetDemand', () => {
     expect(r.source).toContain('T-100');
     expect(r.period).toMatch(/Traffic.*delays.*growth/);
     expect(r.assumptions.join(' ')).toMatch(/80%.*route × month.*estimate/s);
+    expect(r.assumptions).toContain(
+      'Target load factor is 80%: seats needed = passengers ÷ 0.8.',
+    );
   });
 
   it('returns NotFound for an unknown airport', () => {

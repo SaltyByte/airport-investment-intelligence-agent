@@ -9,11 +9,10 @@ export const AppErrorKind = z.enum([
 export const AppError = z.object({ kind: AppErrorKind, message: z.string() });
 export type AppError = z.infer<typeof AppError>;
 
-// Numbers are raw (percent 0–100, ratio 0–1); the web result card formats them by unit.
+// Numbers are raw (percent 0–100); the web result card formats them by unit.
 export const ToolUnit = z.enum([
   'count',
   'percent',
-  'ratio',
   'minutes',
   'miles',
   'seats',

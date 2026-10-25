@@ -22,8 +22,8 @@ describe('roundResult', () => {
         { label: 'a', value: 16.111311813332765, unit: 'percent' },
         {
           label: 'b',
-          value: 0.7965371872920992,
-          unit: 'ratio',
+          value: 79.6537,
+          unit: 'percent',
           percentile: 92.66,
         },
         { label: 'c', value: 12.34, unit: 'minutes' },
@@ -39,7 +39,7 @@ describe('roundResult', () => {
     if (!r.ok) throw new Error('expected ok');
     expect(r.metrics.map((m) => m.value)).toEqual([
       16.1,
-      0.797,
+      79.7,
       12.3,
       70.9,
       50,
@@ -62,7 +62,7 @@ describe('roundResult', () => {
           { key: 'iata', label: 'Code' },
           { key: 'rank', label: 'Rank' },
           { key: 'share', label: 'Share', unit: 'percent' },
-          { key: 'lf', label: 'LF', unit: 'ratio' },
+          { key: 'lf', label: 'LF', unit: 'percent' },
         ],
         rows: [{ iata: 'SFO', rank: 1, share: 23.914916850857804, lf: null }],
       },

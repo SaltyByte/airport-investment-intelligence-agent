@@ -101,7 +101,7 @@ export const expansionRanking = (
             { key: 'scaleScore', label: 'Scale', unit: 'score' },
             { key: 'passengers', label: 'Passengers', unit: 'count' },
             { key: 'growth', label: 'YoY growth', unit: 'percent' },
-            { key: 'loadFactor', label: 'Load factor', unit: 'ratio' },
+            { key: 'loadFactor', label: 'Load factor', unit: 'percent' },
             { key: 'congestion', label: 'Congestion index', unit: 'score' },
             {
               key: 'delayed15Share',
@@ -127,7 +127,7 @@ export const expansionRanking = (
             scaleScore: kpi.expansion.scale,
             passengers: kpi.passengers,
             growth: kpi.growth,
-            loadFactor: kpi.loadFactor,
+            loadFactor: kpi.loadFactor === null ? null : kpi.loadFactor * 100,
             congestion: kpi.congestionIndex,
             delayed15Share: kpi.delayed15Share,
             meanDepDelay: kpi.meanDepDelay,
@@ -154,7 +154,7 @@ export const expansionRanking = (
 export const rankExpansionCandidates = (ctx: ToolContext) =>
   tool({
     description:
-      'Rank airports in a region (US state code, New England or LA basin) or a list of 1-10 airports by Expansion Score (growth, capacity pressure, scale) to find terminal-expansion candidates. Use for questions about which airports most need or merit terminal expansion.',
+      'Returns airports in a region or a list ranked by Expansion Score with its Growth, Pressure and Scale pillars, plus airports lacking data. Use for questions about which airports most need terminal expansion.',
     inputSchema: RankExpansionCandidatesInput,
     execute: async (input) => roundResult(expansionRanking(input, ctx)),
   });

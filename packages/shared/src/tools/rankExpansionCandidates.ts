@@ -3,9 +3,11 @@ import { AirportList, Region } from '../tool-inputs';
 
 export const RankExpansionCandidatesInput = z
   .object({
-    region: Region.optional(),
+    region: Region.optional().describe(
+      'Region whose airports to rank; omit when airports is given.',
+    ),
     airports: AirportList.optional().describe(
-      '1-10 IATA codes to rank instead of a region.',
+      '1-10 airport codes to rank; omit when region is given.',
     ),
   })
   .refine((v) => (v.region === undefined) !== (v.airports === undefined), {

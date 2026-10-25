@@ -21,8 +21,6 @@ export function formatValue(
         text: `${fixed(value, 1)}%`,
         spoken: `${fixed(value, 1)} percent`,
       };
-    case 'ratio':
-      return same(fixed(value, 3));
     case 'minutes':
       return {
         text: `${fixed(value, 1)} min`,

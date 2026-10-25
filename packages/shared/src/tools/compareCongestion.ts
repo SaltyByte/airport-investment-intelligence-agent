@@ -7,7 +7,7 @@ export const CompareCongestionInput = z.object({
     .optional()
     .describe('2-10 airport codes to compare; omit when region is given.'),
   region: Region.optional().describe(
-    'Compare every airport in a region; omit when airports is given.',
+    'Region whose airports to compare; omit when airports is given.',
   ),
 });
 export type CompareCongestionInput = z.infer<typeof CompareCongestionInput>;
