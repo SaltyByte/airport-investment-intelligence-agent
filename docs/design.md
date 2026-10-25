@@ -103,3 +103,4 @@ Copy `.env.example` to `.env` and set `DEEPSEEK_API_KEY` (`DEEPSEEK_MODEL` defau
 - `pnpm dev`: starts the server (port 4100 by default) and the web app.
 - `pnpm ingest`: downloads the sources and rewrites `apps/server/data/snapshot.json.gz`. Takes minutes, mostly the on-time file; cached downloads are reused.
 - `pnpm check`: runs Biome, typecheck and the tests across the workspace.
+- `docker build -t airport-agent . && docker run -p 8080:8080 -e DEEPSEEK_API_KEY=… airport-agent`: one container serves the web app and `/api` on port 8080 (how it runs on DigitalOcean App Platform, with `DEEPSEEK_API_KEY` set as an encrypted runtime variable).
