@@ -1,7 +1,6 @@
 import type { AppUIMessage } from '@app/shared';
 import { isToolUIPart } from 'ai';
 
-// Versioned: a future shape change bumps the key's version and old data is dropped, not parsed.
 export const SESSION_KEY = 'aii.chat.v1';
 const VERSION = 1;
 
@@ -14,10 +13,8 @@ const isMessage = (m: unknown) =>
   ['user', 'assistant', 'system'].includes((m as AppUIMessage).role) &&
   Array.isArray((m as AppUIMessage).parts);
 
-/** The conversation saved in this browser tab, or [] when there is none or it can't be read. */
 export function loadSession(store?: Store): AppUIMessage[] {
   try {
-    // Inside the try: reading window.sessionStorage itself throws when storage is blocked.
     const raw = (store ?? sessionStorage).getItem(SESSION_KEY);
     const saved = JSON.parse(raw ?? 'null');
     return saved?.v === VERSION &&
@@ -30,8 +27,6 @@ export function loadSession(store?: Store): AppUIMessage[] {
   }
 }
 
-// A tool call stopped before its result would reload as a permanent loading block and go back to
-// the model unanswered; it is dropped, and so is an answer left with nothing to show.
 const settled = (message: AppUIMessage): AppUIMessage | null => {
   if (message.role !== 'assistant') return message;
   const parts = message.parts.filter(
@@ -46,7 +41,6 @@ const settled = (message: AppUIMessage): AppUIMessage | null => {
     : null;
 };
 
-/** Saves the conversation; an empty one (New chat) removes it. */
 export function saveSession(messages: AppUIMessage[], store?: Store) {
   try {
     const target = store ?? sessionStorage;

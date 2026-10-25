@@ -90,7 +90,6 @@ const rawKpis = (a: SnapshotAirport): RawKpis => {
   };
 };
 
-/** Every airport's KPIs, national percentiles, congestion index and Expansion Score, keyed by IATA. */
 export const buildNationalKpis = (
   snapshot: Snapshot,
 ): Map<string, AirportKpis> => {

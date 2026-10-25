@@ -17,7 +17,6 @@ const defaultPath = (): string => {
   return existsSync(gz) ? gz : `${DATA_DIR}${SNAPSHOT_FILE}`;
 };
 
-/** Reads the ingested snapshot (gunzipping `.gz`) and validates it against the schema. */
 export const loadSnapshot = (
   path = defaultPath(),
 ): Result<Snapshot, AppError> => {

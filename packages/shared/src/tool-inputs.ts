@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Building blocks for tool input schemas; messages are read by the model.
 export const Iata = z
   .string()
   .regex(/^[A-Z]{3}$/, 'Use a 3-letter uppercase IATA airport code, e.g. SFO.');

@@ -16,7 +16,6 @@ const invalidInput = (message: string): AppError => ({
   message,
 });
 
-/** Validates client-held UI messages and starts a streamed, tool-calling reply. */
 export const streamChat = (
   model: LanguageModel,
   ctx: ToolContext,
@@ -46,8 +45,6 @@ export const streamChat = (
           tools,
           stopWhen: [
             isStepCount(MAX_STEPS),
-            // End on a suggestFollowUps-only step, and only when answer text came after the last data
-            // tool call, so a preamble or an early call cannot swallow the answer.
             ({ steps }) => {
               const isSuggest = (c: { toolName: string }) =>
                 c.toolName === 'suggestFollowUps';
@@ -62,7 +59,6 @@ export const streamChat = (
               );
             },
           ],
-          // The last allowed step may not call tools, so the reply always ends in text.
           prepareStep: ({ stepNumber }) =>
             stepNumber === MAX_STEPS - 1 ? { toolChoice: 'none' } : undefined,
         }).stream,

@@ -33,7 +33,6 @@ export const createApp = ({
     );
   });
 
-  // Built web app; when apps/web/dist is absent (dev) requests just fall through.
   const webDist = fileURLToPath(new URL('../../../web/dist', import.meta.url));
   app.use(express.static(webDist));
 

@@ -1,5 +1,3 @@
-// Pure KPI math over plain numbers; scoring rules per docs/adr/0001-national-percentile-pillar-scoring.md.
-
 export const EXPANSION_WEIGHTS = { growth: 0.4, pressure: 0.4, scale: 0.2 };
 export const LONG_HAUL_MILES = 3000;
 export const TARGET_LOAD_FACTOR = 0.8;

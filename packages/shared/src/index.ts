@@ -6,7 +6,6 @@ import type { GetLongHaulShareInput } from './tools/getLongHaulShare';
 import type { RankExpansionCandidatesInput } from './tools/rankExpansionCandidates';
 import type { SuggestFollowUpsInput } from './tools/suggestFollowUps';
 
-// AppError is defined in tool-result.ts: importing it back from this file would be an ESM cycle.
 export * from './tool-inputs';
 export * from './tool-result';
 export * from './tools/compareCongestion';
@@ -18,7 +17,6 @@ export * from './tools/suggestFollowUps';
 export type AppUIMessage = UIMessage<
   unknown,
   UIDataTypes,
-  // Tool entries are added here as tools land.
   {
     rankExpansionCandidates: {
       input: RankExpansionCandidatesInput;

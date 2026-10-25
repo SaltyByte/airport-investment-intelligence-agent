@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// The subset of the Web Speech API we use; TypeScript's DOM lib does not ship these types.
 export interface Recognition {
   lang: string;
   interimResults: boolean;
@@ -19,17 +18,14 @@ type RecognitionCtor = new () => Recognition;
 const BLOCKED =
   'Microphone access is blocked. Allow it in the browser to dictate.';
 const STOPPED = 'Dictation stopped. Try again.';
-// Chromium builds without Google's speech service (e.g. Electron) fail every session this way.
 const UNAVAILABLE =
   "Voice input isn't available in this browser. Try Chrome or Safari.";
 
-/** Starts one utterance; every result reports the draft `base` plus everything heard so far. */
 export function startRecognition(
   Ctor: RecognitionCtor,
   base: string,
   handlers: {
     onText: (text: string) => void;
-    /** `unavailable`: retrying can't help, so the caller should stop offering dictation. */
     onError: (message: string, unavailable: boolean) => void;
     onEnd: () => void;
   },
@@ -39,7 +35,6 @@ export function startRecognition(
   rec.interimResults = true;
   rec.continuous = false;
   const prefix = base && !/\s$/.test(base) ? `${base} ` : base;
-  // Results accumulate per session, so re-joining them replaces interim text with the final one.
   rec.onresult = (e) =>
     handlers.onText(
       prefix +
@@ -67,7 +62,6 @@ function recognitionCtor(): RecognitionCtor | undefined {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition;
 }
 
-/** Browser speech-to-text into a draft. `toggle(draft)` starts or stops; `cancel` drops the session and its error. */
 export function useDictation(onText: (text: string) => void) {
   const [Ctor] = useState(recognitionCtor);
   const [listening, setListening] = useState(false);
@@ -92,7 +86,7 @@ export function useDictation(onText: (text: string) => void) {
 
   const toggle = (draft: string) => {
     if (recRef.current) {
-      recRef.current.stop(); // delivers the final transcript, then ends
+      recRef.current.stop();
       return;
     }
     if (!Ctor) return;

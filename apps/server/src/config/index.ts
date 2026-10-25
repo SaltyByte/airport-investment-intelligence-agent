@@ -8,7 +8,6 @@ const Env = z.object({
 });
 export type Config = z.infer<typeof Env>;
 
-/** Parses the environment; the Err is a one-line message for the operator. */
 export const loadConfig = (
   env: Record<string, string | undefined>,
 ): Result<Config, string> => {

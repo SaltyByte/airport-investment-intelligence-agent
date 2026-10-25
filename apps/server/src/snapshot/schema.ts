@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Snapshot written by `pnpm ingest` (gzipped when large) and loaded by the server at boot.
 export const SNAPSHOT_FILE = 'snapshot.json';
 export const SNAPSHOT_GZ_FILE = 'snapshot.json.gz';
 
@@ -56,9 +55,7 @@ export const snapshotAirportSchema = z.object({
   priorEnplanements: count,
   latitude: z.number().nullable(),
   longitude: z.number().nullable(),
-  // T-100 sums over meta.period; null when the airport has no T-100 departures.
   traffic: z.object({ passenger: trafficSums, cargo: trafficSums }).nullable(),
-  // On-time sums over the on-time source period; null when no reporting-carrier flights.
   delays: delaySumsSchema.nullable(),
 });
 

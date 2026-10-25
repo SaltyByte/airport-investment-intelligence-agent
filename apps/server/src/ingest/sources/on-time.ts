@@ -61,7 +61,6 @@ export const loadOnTime = async (month: string) => {
   return aggregateOnTime(parser);
 };
 
-/** On-time per-flight rows → per-origin delay sums. Blank cause fields count as 0. */
 export const aggregateOnTime = async (
   rows: AsyncIterable<Row> | Iterable<Row>,
 ): Promise<Map<string, DelaySums>> => {

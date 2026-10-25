@@ -9,7 +9,6 @@ export const AppErrorKind = z.enum([
 export const AppError = z.object({ kind: AppErrorKind, message: z.string() });
 export type AppError = z.infer<typeof AppError>;
 
-// Numbers are raw (percent 0–100); the web result card formats them by unit.
 export const ToolUnit = z.enum([
   'count',
   'percent',
@@ -21,7 +20,6 @@ export const ToolUnit = z.enum([
 ]);
 export type ToolUnit = z.infer<typeof ToolUnit>;
 
-// `estimate: true` marks modelled values (e.g. seat gap); the card draws them dashed and labels them "est.".
 export const ToolMetric = z.object({
   label: z.string(),
   value: z.number().nullable(),
@@ -44,13 +42,10 @@ export const ToolTable = z.object({
   rows: z.array(
     z.record(z.string(), z.union([z.string(), z.number(), z.null()])),
   ),
-  // Columns shown by default, in order; the rest sit behind "All metrics". `iata` followed by a
-  // text column renders as one Airport cell.
   keyColumns: z.array(z.string()).optional(),
 });
 export type ToolTable = z.infer<typeof ToolTable>;
 
-// The answer's deciding airport and number, computed by the tool so the UI never does arithmetic.
 export const ToolHeadline = z.object({
   iata: z.string(),
   name: z.string(),
@@ -77,7 +72,6 @@ export const ToolSuccess = z.object({
   period: z.string(),
   generatedAt: z.string(),
   assumptions: z.array(z.string()),
-  // Short label of the one caveat that changes the decision, e.g. "Profitability proxy, not ROI".
   caveatBadge: z.string().optional(),
   caveats: z.array(z.string()),
 });

@@ -15,7 +15,6 @@ import { loadSession, saveSession } from '@/session';
 export function App() {
   const [announcement, setAnnouncement] = useState('');
   const [savedMessages] = useState(() => loadSession());
-  // Set by New chat while a reply runs: its abort lands after the reset and must stay silent.
   const resetting = useRef(false);
   const {
     messages,
@@ -28,8 +27,6 @@ export function App() {
     stop,
   } = useChat<AppUIMessage>({
     messages: savedMessages,
-    // Announce each finished reply once, verdict only (works for buffered streams too); errors
-    // are announced by the alert.
     onFinish: ({ message, isError, isAbort }) => {
       if (resetting.current) resetting.current = false;
       else if (isError) setAnnouncement('');
@@ -68,7 +65,6 @@ export function App() {
     inputRef.current?.focus();
   };
 
-  // No confirmation: a running reply is stopped first, then the conversation and its copy go.
   const newChat = () => {
     if (busy) {
       resetting.current = true;
@@ -87,7 +83,6 @@ export function App() {
 
       <main
         ref={scrollRef}
-        // Size container: the latest answer's min-height (100cqh) is measured against it.
         className="relative min-h-0 flex-1 overflow-y-auto [container-type:size] [scrollbar-gutter:stable_both-edges]"
       >
         <div className={cn(column, 'flex flex-col gap-10 pb-6')}>

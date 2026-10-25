@@ -138,9 +138,9 @@ height: "10px"
 
 **Creative North Star: "The Airport Layout Plan Sheet"**
 
-Every answer is issued like a sheet from an airport drawing set. The page is a cool drawing-sheet ground. Answers sit on it as white sheets, and an ink header band runs across the top. Each tool result opens with a title block, the ruled cell grid found in the corner of an engineering drawing. It holds the airport's location sign, the deciding number on a true 0–100 scale, the caveat, and the provenance (source, period, generated date, "Computed by deterministic scoring"). The prose explanation follows the title block, never the other way round. The world is precise rather than decorative: ink does the structural work, drafting blue marks anything estimated or selected, and sign yellow appears only where an airfield sign would.
+Every answer is issued like a sheet from an airport drawing set. The page is a cool drawing-sheet ground. Answers sit on it as white sheets, and an ink header band runs across the top. Each tool result opens with a title block, the ruled cell grid found in the corner of an engineering drawing. It holds the airport's location sign, the deciding number on a true 0–100 scale, the caveat, and the provenance (source, period, generated date, "Computed by deterministic scoring"). The prose explanation follows the title block, never the other way round. Nothing is decorative: ink does the structural work, drafting blue marks anything estimated or selected, and sign yellow appears only where an airfield sign would.
 
-Density is that of a working document: 1px rules, compact 12px labels and tabular figures, with one large number per block. Depth comes from rules and tone, never from lift. Motion is short and only arrives (ease-out fades and 6px rises on transform and opacity). Loops run only while something is loading, and reduced motion gets static content.
+Density is that of a working document: 1px rules, compact 12px labels and tabular figures, with one large number per block. Depth comes from rules and tone, never from shadow. Motion is short and used only for entrances (ease-out fades and 6px rises on transform and opacity). Loops run only while something is loading, and reduced motion gets static content.
 
 Rejected on purpose: chat bubbles followed by a generic card with a wide table, monospaced or "code" display faces for data, and broadsheet hairlines scattered across the page (rules stay inside the title block and tables).
 
@@ -158,7 +158,7 @@ A near-monochrome ink-on-cool-paper palette with one functional blue and one sig
 
 ### Primary
 
-- **Drawing Ink** (#1b2230): text, the header band, primary buttons, input borders, the title-block frame, observed bar fills, and the table header rule. Ink carries both structure and action.
+- **Drawing Ink** (#1b2230): text, the header band, primary buttons, input borders, the title-block frame, observed bar fills, and the table header rule.
 
 ### Secondary
 
@@ -172,8 +172,8 @@ A near-monochrome ink-on-cool-paper palette with one functional blue and one sig
 
 - **Sheet Ground** (#f4f6f7): the page behind the sheets. It is also the ground of the sticky question line.
 - **Sheet White** (#ffffff): answer sheets, title-block cells, the composer bar, menus, and outline buttons placed on sheets.
-- **Ground Fill** (#e6eaee): a derived tint, the sheet ground one step darker. It fills empty bar tracks and skeletons and is the hover fill for list rows, menu items and outline buttons. Reviewers accepted it as a tint of the brief palette, not a new hue.
-- **Muted Ink** (#4f5a6b): a derived tint, ink at reduced strength. It colours cell labels, secondary lines, placeholder text, unselected tabs, and the question text on the Q line. It reaches at least 4.5:1 on the ground, on white and on Ground Fill. Reviewers accepted it as a tint of the brief palette.
+- **Ground Fill** (#e6eaee): a derived tint, the sheet ground one step darker. It fills empty bar tracks and skeletons and is the hover fill for list rows, menu items and outline buttons. It counts as a tint of the brief palette.
+- **Muted Ink** (#4f5a6b): a derived tint, ink at reduced strength. It colours cell labels, secondary lines, placeholder text, unselected tabs, and the question text on the Q line. It reaches at least 4.5:1 on the ground, on white and on Ground Fill, and also counts as a tint of the brief palette.
 - **Grid Grey** (#b4bcc8): the 1px rules between title-block cells, table row rules, sheet borders, scale-bar ticks, and the scrollbar thumb. It is too light for an input boundary (under 3:1), so inputs take ink.
 - **Destructive Red** (oklch(0.577 0.245 27.325)): the failed-reply alert, the "Data unavailable" icon and the live-dictation dot only.
 
