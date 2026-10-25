@@ -91,9 +91,33 @@ export const rankExpansionCandidates = (
       const excluded = list.filter((m) => m.kpi.expansion.score === null);
       const us = input.region === 'US';
       const shown = us ? scored.slice(0, US_TOP) : scored;
+      const first = scored[0]?.kpi;
+      // One note per reason: "2 not ranked (no delay data): EWB, EWC".
+      const byReason = new Map<string, string[]>();
+      for (const { kpi } of excluded) {
+        const reason = [
+          ...new Set(kpi.expansion.missing.map((k) => MISSING_WORDS[k] ?? k)),
+        ].join(', ');
+        byReason.set(reason, [...(byReason.get(reason) ?? []), kpi.iata]);
+      }
       return {
         ok: true,
         title: `Terminal expansion candidates${us ? `: US (top ${US_TOP})` : input.region ? `: ${input.region}` : ''}`,
+        ...(first && {
+          headline: {
+            iata: first.iata,
+            name: first.name,
+            label: 'Expansion score',
+            value: first.expansion.score,
+            unit: 'score' as const,
+            context: `Ranked 1 of ${scored.length}${excluded.length > 0 ? `, ${excluded.length} not ranked` : ''}`,
+            drivers: [
+              { label: 'Growth', value: first.expansion.growth },
+              { label: 'Pressure', value: first.expansion.pressure },
+              { label: 'Scale', value: first.expansion.scale },
+            ],
+          },
+        }),
         metrics: [
           { label: 'Airports ranked', value: scored.length, unit: 'count' },
           {
@@ -104,7 +128,7 @@ export const rankExpansionCandidates = (
         ],
         table: {
           columns: [
-            { key: 'iata', label: 'Airport code' },
+            { key: 'iata', label: 'Code' },
             { key: 'airport', label: 'Airport' },
             { key: 'rank', label: 'Rank' },
             { key: 'score', label: 'Expansion score', unit: 'score' },
@@ -126,6 +150,15 @@ export const rankExpansionCandidates = (
               unit: 'minutes',
             },
             { key: 'meanTaxiOut', label: 'Mean taxi-out', unit: 'minutes' },
+          ],
+          keyColumns: [
+            'rank',
+            'iata',
+            'airport',
+            'score',
+            'growthScore',
+            'pressureScore',
+            'scaleScore',
           ],
           rows: shown.map(({ kpi, catchment }, i) => ({
             iata: kpi.iata,
@@ -155,13 +188,14 @@ export const rankExpansionCandidates = (
               ...(list.length === 0
                 ? [`No airports in ${input.region} are in the data.`]
                 : []),
-              ...excluded.map(
-                ({ kpi }) =>
-                  `${kpi.iata}: ${[...new Set(kpi.expansion.missing.map((k) => MISSING_WORDS[k] ?? k))].join(', ')}`,
+              ...[...byReason].map(
+                ([reason, codes]) =>
+                  `${codes.length} not ranked (${reason}): ${codes.join(', ')}`,
               ),
             ],
         ...snapshotFooter(snapshot, ['traffic', 'delays', 'growth']),
         assumptions: assumptions(input, kpis.size),
+        caveatBadge: 'Profitability proxy, not ROI',
         caveats: [...DELAY_CAVEATS, GROWTH_CAVEAT],
       };
     },

@@ -189,8 +189,18 @@ describe('estimateUnmetDemand', () => {
       label: 'Seat gap',
       value: 13,
       unit: 'seats',
-      note: 'estimate',
+      estimate: true,
     });
+    expect(r.headline).toEqual({
+      iata: 'SFO',
+      name: 'SFO Airport',
+      label: 'Seat gap',
+      value: 13,
+      unit: 'seats',
+      estimate: true,
+      context: '0 extra departures needed',
+    });
+    expect(r.caveatBadge).toBe('Estimate, not observed demand');
     expect(r.metrics.map((m) => m.label)).toEqual([
       'Seat gap',
       'Extra departures needed',
@@ -209,9 +219,24 @@ describe('estimateUnmetDemand', () => {
     expect(r.table?.rows).toEqual([
       { iata: 'LAX', monthsAbove: 1, seatsShort: 13, extraDepartures: 0 },
     ]);
-    expect(r.table?.columns.map((c) => c.key)).toEqual([
+    expect(r.table?.columns).toEqual([
+      { key: 'iata', label: 'Code' },
+      { key: 'monthsAbove', label: 'Months above 80%', unit: 'count' },
+      {
+        key: 'seatsShort',
+        label: 'Seats short',
+        unit: 'seats',
+        estimate: true,
+      },
+      {
+        key: 'extraDepartures',
+        label: 'Extra departures',
+        unit: 'count',
+        estimate: true,
+      },
+    ]);
+    expect(r.table?.keyColumns).toEqual([
       'iata',
-      'monthsAbove',
       'seatsShort',
       'extraDepartures',
     ]);
@@ -238,8 +263,9 @@ describe('estimateUnmetDemand', () => {
       label: 'Extra departures needed',
       value: 1,
       unit: 'count',
-      note: 'estimate',
+      estimate: true,
     });
+    expect(r.headline?.context).toBe('1 extra departures needed');
     expect(r.table?.rows).toEqual([
       { iata: 'LAX', monthsAbove: 2, seatsShort: 125, extraDepartures: 1 },
       { iata: 'SEA', monthsAbove: 1, seatsShort: 100, extraDepartures: 0 },

@@ -1,4 +1,4 @@
-import type { ToolResult } from '@app/shared';
+import { ToolResult } from '@app/shared';
 import { describe, expect, it } from 'vitest';
 import { snapshot } from '../../test/fixtures';
 import { roundResult, snapshotFooter } from './result';
@@ -95,6 +95,55 @@ describe('roundResult', () => {
     expect(r.table?.rows).toEqual([
       { iata: 'SFO', rank: 1, share: 23.9, lf: null },
     ]);
+  });
+
+  it('keeps the new answer fields, rounds the headline and parses as a ToolResult', () => {
+    const r = roundResult({
+      ok: true,
+      title: 't',
+      headline: {
+        iata: 'BGR',
+        name: 'Bangor International Airport',
+        label: 'Expansion score',
+        value: 80.2666,
+        unit: 'score',
+        context: 'Ranked 1 of 14, 10 not ranked',
+        drivers: [
+          { label: 'Growth', value: 83.04 },
+          { label: 'Pressure', value: null },
+        ],
+      },
+      metrics: [
+        { label: 'Seat gap', value: 12.6, unit: 'seats', estimate: true },
+      ],
+      table: {
+        columns: [
+          { key: 'iata', label: 'Code' },
+          { key: 'gap', label: 'Seats short', unit: 'seats', estimate: true },
+        ],
+        rows: [{ iata: 'SFO', gap: 1.4 }],
+        keyColumns: ['iata', 'gap'],
+      },
+      caveatBadge: 'Profitability proxy, not ROI',
+      ...footer,
+    });
+    expect(ToolResult.parse(r)).toEqual(r);
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.headline).toMatchObject({
+      value: 80.3,
+      drivers: [
+        { label: 'Growth', value: 83 },
+        { label: 'Pressure', value: null },
+      ],
+    });
+    expect(r.metrics[0]).toEqual({
+      label: 'Seat gap',
+      value: 13,
+      unit: 'seats',
+      estimate: true,
+    });
+    expect(r.table?.keyColumns).toEqual(['iata', 'gap']);
+    expect(r.caveatBadge).toBe('Profitability proxy, not ROI');
   });
 
   it('passes errors through', () => {

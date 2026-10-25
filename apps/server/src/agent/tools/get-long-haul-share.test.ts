@@ -51,6 +51,24 @@ describe('getLongHaulShare', () => {
     ]);
     expect(result.source).toBe('BTS T-100 Segment');
     expect(result.period).toBe('Traffic Aug 2025–Jul 2026');
+    expect(result.headline).toEqual({
+      iata: 'ANC',
+      name: 'ANC Airport',
+      label: 'Long-haul share, all flights',
+      value: 46.7,
+      unit: 'percent',
+      context: '14 of 30 departures',
+    });
+    expect(result.caveatBadge).toBe('Snapshot period only');
+    expect(result.table?.columns[0]).toEqual({ key: 'iata', label: 'Code' });
+    expect(result.table?.keyColumns).toEqual([
+      'iata',
+      'distance',
+      'departures',
+      'service',
+    ]);
+    const keys = result.table?.columns.map((c) => c.key) ?? [];
+    for (const k of result.table?.keyColumns ?? []) expect(keys).toContain(k);
   });
 
   it('reports no flights for an empty group and 0% without a table', () => {

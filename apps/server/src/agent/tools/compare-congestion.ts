@@ -7,16 +7,16 @@ import { tool } from 'ai';
 import type { AirportKpis } from '../../kpis/airport-kpis';
 import type { ToolContext } from './index';
 import { resolveAirports, resolveRegion } from './regions';
-import { DELAY_CAVEATS, roundResult, snapshotFooter } from './result';
+import { DELAY_CAVEATS, round, roundResult, snapshotFooter } from './result';
 
 const COLUMNS: ToolTable['columns'] = [
-  { key: 'iata', label: 'Airport' },
-  { key: 'name', label: 'Name' },
+  { key: 'iata', label: 'Code' },
+  { key: 'name', label: 'Airport' },
   { key: 'congestionIndex', label: 'Congestion index', unit: 'score' },
-  { key: 'delayed15Share', label: 'Delayed ≥15 min', unit: 'percent' },
+  { key: 'delayed15Share', label: 'Delayed 15+ min', unit: 'percent' },
   {
     key: 'delayed15SharePct',
-    label: 'Delayed ≥15 min percentile',
+    label: 'Delayed 15+ min percentile',
     unit: 'percentile',
   },
   { key: 'meanDepDelay', label: 'Mean departure delay', unit: 'minutes' },
@@ -98,8 +98,10 @@ export const compareCongestion = (
   const airports = [...resolved.value].sort(
     (a, b) => (b.congestionIndex ?? -1) - (a.congestionIndex ?? -1),
   );
-  // Sorted, so the first airport with an index is the most congested.
-  const top = airports.find((a) => a.congestionIndex !== null);
+  // Sorted, so the first airport with an index is the most congested and the second the runner-up.
+  const indexed = airports.filter((a) => a.congestionIndex !== null);
+  const [top, next] = indexed;
+  const missing = airports.length - indexed.length;
   const notes = [
     ...airports
       .filter((a) => a.flights === null)
@@ -111,10 +113,34 @@ export const compareCongestion = (
       ? `${top.iata} is the most congested by congestion index.`
       : 'No airport here has a congestion index.',
   ];
+  // Lead over the runner-up from the displayed (rounded) indices, to one fixed decimal like the card.
+  const topIdx = round(top?.congestionIndex ?? 0, 'score');
+  const nextIdx = round(next?.congestionIndex ?? 0, 'score');
+  const runnerUp = next
+    ? `; ${(topIdx - nextIdx).toFixed(1)} points above ${next.iata} (${nextIdx.toFixed(1)})`
+    : '';
 
   return {
     ok: true,
     title: `Congestion comparison: ${input.region ?? iatas.join(', ')}`,
+    ...(top && {
+      headline: {
+        iata: top.iata,
+        name: top.name,
+        label: 'Congestion index',
+        value: top.congestionIndex,
+        unit: 'score' as const,
+        context: `Most congested of ${indexed.length}${missing > 0 ? `, ${missing} without data` : ''}${runnerUp}`,
+        drivers: [
+          { label: 'Delayed 15+ min', value: top.percentiles.delayed15Share },
+          {
+            label: 'Mean departure delay',
+            value: top.percentiles.meanDepDelay,
+          },
+          { label: 'Mean taxi-out', value: top.percentiles.meanTaxiOut },
+        ],
+      },
+    }),
     metrics: airports.slice(0, 10).map((a) => ({
       label: `Congestion index — ${a.iata}`,
       value: a.congestionIndex,
@@ -123,6 +149,14 @@ export const compareCongestion = (
     table: {
       columns: COLUMNS,
       rows: airports.map((a) => row(a, catchment.has(a.iata))),
+      keyColumns: [
+        'iata',
+        'name',
+        'congestionIndex',
+        'delayed15SharePct',
+        'meanDepDelayPct',
+        'meanTaxiOutPct',
+      ],
     },
     notes,
     ...snapshotFooter(ctx.snapshot, ['delays']),
@@ -138,6 +172,7 @@ export const compareCongestion = (
         ? ['LA basin = LAX, BUR, LGB, ONT and SNA.']
         : []),
     ],
+    caveatBadge: 'One month of domestic delays',
     caveats: [
       ...DELAY_CAVEATS,
       'Cause minutes are recorded only for delayed arrivals.',

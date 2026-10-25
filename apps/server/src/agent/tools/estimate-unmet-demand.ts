@@ -166,16 +166,26 @@ export const estimateUnmetDemand = (
       },
     };
   const nasShare = a.causeShares?.nas ?? null;
+  const extraDepartures = Math.round(g.extraDepartures);
   return {
     ok: true,
     title: `Unmet demand at ${a.iata} (${a.name})`,
+    headline: {
+      iata: a.iata,
+      name: a.name,
+      label: 'Seat gap',
+      value: g.gap,
+      unit: 'seats',
+      estimate: true,
+      context: `${fmt(extraDepartures)} extra departures needed`,
+    },
     metrics: [
-      { label: 'Seat gap', value: g.gap, unit: 'seats', note: 'estimate' },
+      { label: 'Seat gap', value: g.gap, unit: 'seats', estimate: true },
       {
         label: 'Extra departures needed',
-        value: Math.round(g.extraDepartures),
+        value: extraDepartures,
         unit: 'count',
-        note: 'estimate',
+        estimate: true,
       },
       { label: 'Route-months above 80%', value: g.monthsAbove, unit: 'count' },
       {
@@ -204,10 +214,20 @@ export const estimateUnmetDemand = (
     ],
     table: {
       columns: [
-        { key: 'iata', label: 'Destination' },
+        { key: 'iata', label: 'Code' },
         { key: 'monthsAbove', label: 'Months above 80%', unit: 'count' },
-        { key: 'seatsShort', label: 'Seats short', unit: 'seats' },
-        { key: 'extraDepartures', label: 'Extra departures', unit: 'count' },
+        {
+          key: 'seatsShort',
+          label: 'Seats short',
+          unit: 'seats',
+          estimate: true,
+        },
+        {
+          key: 'extraDepartures',
+          label: 'Extra departures',
+          unit: 'count',
+          estimate: true,
+        },
       ],
       rows: g.top.map((d) => ({
         iata: d.dest,
@@ -215,6 +235,7 @@ export const estimateUnmetDemand = (
         seatsShort: d.seatsShort,
         extraDepartures: Math.round(d.extraDepartures),
       })),
+      keyColumns: ['iata', 'seatsShort', 'extraDepartures'],
     },
     notes: demandDrivers({
       monthsAbove: g.monthsAbove,
@@ -232,6 +253,7 @@ export const estimateUnmetDemand = (
       'The seat gap is an estimate: demand turned away by full flights is never observed.',
       'Drivers fire at: any route-month above 80%; load-factor percentile ≥ 75; congestion index ≥ 75; NAS share of delay-cause minutes ≥ 25%; growth > 0%.',
     ],
+    caveatBadge: 'Estimate, not observed demand',
     caveats: [...DELAY_CAVEATS, GROWTH_CAVEAT],
   };
 };

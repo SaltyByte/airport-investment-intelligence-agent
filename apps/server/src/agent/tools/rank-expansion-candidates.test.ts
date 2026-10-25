@@ -44,11 +44,37 @@ describe('rankExpansionCandidates', () => {
       label: 'Load factor',
       unit: 'percent',
     });
-    expect(result.table?.columns.slice(0, 3).map((c) => c.key)).toEqual([
+    expect(result.table?.columns.slice(0, 3)).toEqual([
+      { key: 'iata', label: 'Code' },
+      { key: 'airport', label: 'Airport' },
+      { key: 'rank', label: 'Rank' },
+    ]);
+    const keys = result.table?.columns.map((c) => c.key) ?? [];
+    expect(result.table?.keyColumns).toEqual([
+      'rank',
       'iata',
       'airport',
-      'rank',
+      'score',
+      'growthScore',
+      'pressureScore',
+      'scaleScore',
     ]);
+    for (const k of result.table?.keyColumns ?? []) expect(keys).toContain(k);
+    const bos = ctx.kpis.get('BOS')?.expansion;
+    expect(result.headline).toEqual({
+      iata: 'BOS',
+      name: 'BOS Airport',
+      label: 'Expansion score',
+      value: bos?.score,
+      unit: 'score',
+      context: 'Ranked 1 of 4, 1 not ranked',
+      drivers: [
+        { label: 'Growth', value: bos?.growth },
+        { label: 'Pressure', value: bos?.pressure },
+        { label: 'Scale', value: bos?.scale },
+      ],
+    });
+    expect(result.caveatBadge).toBe('Profitability proxy, not ROI');
     expect(result.source).toMatch(/T-100.*On-Time.*FAA/);
     expect(result.caveats).toContain(GROWTH_CAVEAT);
     expect(result.table?.columns.slice(-3)).toEqual([
@@ -57,7 +83,7 @@ describe('rankExpansionCandidates', () => {
       { key: 'meanTaxiOut', label: 'Mean taxi-out', unit: 'minutes' },
     ]);
     expect(result.metrics.map((m) => m.value)).toEqual([4, 1]);
-    expect(result.notes).toEqual(['EWB: no delay data']);
+    expect(result.notes).toEqual(['1 not ranked (no delay data): EWB']);
     expect(result.assumptions.join(' ')).toContain('ALB');
   });
 
@@ -66,6 +92,37 @@ describe('rankExpansionCandidates', () => {
     if (!result.ok) throw new Error('expected ok');
     expect(result.table?.rows).toEqual([]);
     expect(result.notes?.[0]).toMatch(/No airports/);
+  });
+
+  it('says just "Ranked 1 of N" when every airport is ranked', () => {
+    const result = rankExpansionCandidates(ctx, { airports: ['PVD', 'BOS'] });
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.headline?.context).toBe('Ranked 1 of 2');
+  });
+
+  it('groups not-ranked airports into one note per reason', () => {
+    const s = snapshot([
+      airport('BOS'),
+      airport('EWB', { delays: null }),
+      airport('EWC', { delays: null }),
+      airport('GRO', { priorEnplanements: 0 }),
+    ]);
+    const result = rankExpansionCandidates(
+      { snapshot: s, kpis: buildNationalKpis(s) },
+      { airports: ['BOS', 'EWB', 'GRO', 'EWC'] },
+    );
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.notes).toEqual([
+      '2 not ranked (no delay data): EWB, EWC',
+      '1 not ranked (no growth data): GRO',
+    ]);
+    expect(result.headline?.context).toBe('Ranked 1 of 1, 3 not ranked');
+  });
+
+  it('has no headline when no airport is ranked', () => {
+    const result = rankExpansionCandidates(ctx, { region: 'WY' });
+    if (!result.ok) throw new Error('expected ok');
+    expect(result.headline).toBeUndefined();
   });
 
   it('ranks the whole US: top 20 rows, total scored count and summary notes only', () => {
@@ -96,6 +153,7 @@ describe('rankExpansionCandidates', () => {
       'The table shows the top 20 of 23 scored airports.',
       '2 airports are not ranked for lack of data.',
     ]);
+    expect(result.headline?.context).toBe('Ranked 1 of 23, 2 not ranked');
   });
 
   it('states the profitability proxy on every ranking', () => {

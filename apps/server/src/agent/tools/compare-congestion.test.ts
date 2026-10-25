@@ -55,6 +55,65 @@ describe('compareCongestion', () => {
     ]);
     expect(r.source).toBe('BTS On-Time Reporting Carrier');
     expect(r.period).toBe('Delays Jul 2026');
+    const lax = ctx.kpis.get('LAX');
+    const ont = ctx.kpis.get('ONT');
+    const r1 = (n: number | null | undefined) => Math.round((n ?? 0) * 10) / 10;
+    expect(r.headline).toEqual({
+      iata: 'LAX',
+      name: 'LAX Airport',
+      label: 'Congestion index',
+      value: lax?.congestionIndex,
+      unit: 'score',
+      // Indices to one fixed decimal, as on the card.
+      context: `Most congested of 2, 1 without data; ${(r1(lax?.congestionIndex) - r1(ont?.congestionIndex)).toFixed(1)} points above ONT (${r1(ont?.congestionIndex).toFixed(1)})`,
+      drivers: [
+        { label: 'Delayed 15+ min', value: lax?.percentiles.delayed15Share },
+        { label: 'Mean departure delay', value: lax?.percentiles.meanDepDelay },
+        { label: 'Mean taxi-out', value: lax?.percentiles.meanTaxiOut },
+      ],
+    });
+    expect(r.caveatBadge).toBe('One month of domestic delays');
+    expect(r.table?.columns.slice(0, 2)).toEqual([
+      { key: 'iata', label: 'Code' },
+      { key: 'name', label: 'Airport' },
+    ]);
+    expect(r.table?.keyColumns).toEqual([
+      'iata',
+      'name',
+      'congestionIndex',
+      'delayed15SharePct',
+      'meanDepDelayPct',
+      'meanTaxiOutPct',
+    ]);
+    const keys = r.table?.columns.map((c) => c.key) ?? [];
+    for (const k of r.table?.keyColumns ?? []) expect(keys).toContain(k);
+  });
+
+  it('drops the runner-up clause when only one airport has an index', () => {
+    const r = compareCongestion(ctx, { airports: ['BUR', 'LAX'] });
+    if (!r.ok) throw new Error(r.error.message);
+    expect(r.headline?.context).toBe('Most congested of 1, 1 without data');
+  });
+
+  it('counts only airports with an index and omits "without data" when all have one', () => {
+    const r = compareCongestion(ctx, { airports: ['LAX', 'ONT'] });
+    if (!r.ok) throw new Error(r.error.message);
+    expect(r.headline?.context).toMatch(
+      /^Most congested of 2; \d+\.\d points above ONT \(\d+\.\d\)$/,
+    );
+  });
+
+  it('has no headline when no airport has an index', () => {
+    const s = snapshot([
+      airport('BUR', { delays: null }),
+      airport('LGB', { delays: null }),
+    ]);
+    const r = compareCongestion(
+      { snapshot: s, kpis: buildNationalKpis(s) },
+      { airports: ['BUR', 'LGB'] },
+    );
+    if (!r.ok) throw new Error(r.error.message);
+    expect(r.headline).toBeUndefined();
   });
 
   it('shows cause shares and nulls when no cause minutes were reported', () => {

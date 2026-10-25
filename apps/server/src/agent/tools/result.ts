@@ -62,18 +62,30 @@ const DECIMALS: Record<ToolUnit, number> = {
   miles: 0,
 };
 
-const round = <T>(value: T, unit: ToolUnit | undefined): T => {
+export const round = <T>(value: T, unit: ToolUnit | undefined): T => {
   if (typeof value !== 'number' || unit === undefined) return value;
   const f = 10 ** DECIMALS[unit];
   return (Math.round(value * f) / f) as T;
 };
 
-/** Rounds metric values, percentiles and table cells by unit so the model quotes display-ready numbers. */
+/** Rounds metric values, percentiles, table cells and the headline by unit so the model quotes display-ready numbers. */
 export const roundResult = (result: ToolResult): ToolResult => {
   if (!result.ok) return result;
   const units = new Map(result.table?.columns.map((c) => [c.key, c.unit]));
   return {
     ...result,
+    ...(result.headline && {
+      headline: {
+        ...result.headline,
+        value: round(result.headline.value, result.headline.unit),
+        ...(result.headline.drivers && {
+          drivers: result.headline.drivers.map((d) => ({
+            ...d,
+            value: round(d.value, 'percentile'),
+          })),
+        }),
+      },
+    }),
     metrics: result.metrics.map((m) => ({
       ...m,
       value: round(m.value, m.unit),
@@ -83,7 +95,7 @@ export const roundResult = (result: ToolResult): ToolResult => {
     })),
     ...(result.table && {
       table: {
-        columns: result.table.columns,
+        ...result.table,
         rows: result.table.rows.map((row) =>
           Object.fromEntries(
             Object.entries(row).map(([k, v]) => [k, round(v, units.get(k))]),

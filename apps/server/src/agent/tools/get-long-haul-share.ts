@@ -49,11 +49,20 @@ export const getLongHaulShare = (
         .filter((r) => r.departures > 0)
         .sort((a, b) => b.departures - a.departures)
         .slice(0, 5);
+      const all = shareMetric('Long-haul share — all flights', rows);
       return {
         ok: true,
         title: `Long-haul share of departures — ${airport?.name ?? iata} (${iata})`,
+        headline: {
+          iata,
+          name: airport?.name ?? iata,
+          label: 'Long-haul share, all flights',
+          value: all.value,
+          unit: all.unit,
+          context: all.note,
+        },
         metrics: [
-          shareMetric('Long-haul share — all flights', rows),
+          all,
           shareMetric(
             'Long-haul share — passenger flights',
             rows.filter((r) => r.classGroup === 'passenger'),
@@ -67,12 +76,13 @@ export const getLongHaulShare = (
           ? {
               table: {
                 columns: [
-                  { key: 'iata', label: 'Destination' },
+                  { key: 'iata', label: 'Code' },
                   { key: 'distance', label: 'Distance', unit: 'miles' },
                   { key: 'departures', label: 'Departures', unit: 'count' },
                   { key: 'service', label: 'Service' },
                 ],
                 rows: top,
+                keyColumns: ['iata', 'distance', 'departures', 'service'],
               },
             }
           : {
@@ -86,6 +96,7 @@ export const getLongHaulShare = (
           'Share = long-haul departures performed ÷ all departures performed from the airport.',
           'Passenger flights = scheduled and charter passenger service; cargo flights = all-cargo service.',
         ],
+        caveatBadge: 'Snapshot period only',
         caveats: [
           'Only BTS T-100 route traffic is used (all carriers reporting to BTS, domestic and international segments); delay and growth data are not involved.',
           'Distance is the nonstop segment flown, not the passenger’s full trip, and the 12-month total averages out seasonal patterns.',
