@@ -137,6 +137,193 @@ describe('POST /api/chat', () => {
     expect(textDeltas.at(-1)?.delta).toBe('Final answer.');
   });
 
+  // Text chunks then the given tool calls, as one model step.
+  const QUESTIONS = [
+    'What is the long-haul share at Fairbanks (FAI)?',
+    'How congested is Anchorage (ANC) compared with Seattle (SEA)?',
+  ];
+  const TOOL_INPUTS: Record<string, unknown> = {
+    suggestFollowUps: { questions: QUESTIONS },
+    getLongHaulShare: { iata: 'SFO' },
+  };
+  const step = (text: string | null, toolNames: string[]) =>
+    simulateReadableStream({
+      chunks: [
+        ...(text === null
+          ? []
+          : ([
+              { type: 'text-start', id: 't1' },
+              { type: 'text-delta', id: 't1', delta: text },
+              { type: 'text-end', id: 't1' },
+            ] as const)),
+        ...toolNames.map(
+          (toolName) =>
+            ({
+              type: 'tool-call',
+              toolCallId: crypto.randomUUID(),
+              toolName,
+              input: JSON.stringify(TOOL_INPUTS[toolName]),
+            }) as const,
+        ),
+        finish(toolNames.length > 0 ? 'tool-calls' : 'stop'),
+      ],
+    });
+  // Plays the given [text, toolNames] steps in order, then plain text for any extra call.
+  const scripted = (...steps: [string | null, string[]][]) => {
+    let i = 0;
+    return new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: step(...(steps[i++] ?? ['Extra step.', []])),
+      }),
+    });
+  };
+  const textDeltas = (body: string) =>
+    chunks(body)
+      .filter((c) => c.type === 'text-delta')
+      .map((c) => c.delta);
+
+  it('ends the turn when suggestFollowUps follows the answer text', async () => {
+    const model = scripted(['ANC is 12.3% long-haul.', ['suggestFollowUps']]);
+
+    const res = await request(createApp({ model, ctx }))
+      .post('/api/chat')
+      .send({ messages: [userMessage] });
+
+    expect(model.doStreamCalls).toHaveLength(1);
+    const body = chunks(res.text);
+    expect(body).toContainEqual(
+      expect.objectContaining({
+        type: 'text-delta',
+        delta: 'ANC is 12.3% long-haul.',
+      }),
+    );
+    expect(body).toContainEqual(
+      expect.objectContaining({
+        type: 'tool-input-available',
+        toolName: 'suggestFollowUps',
+      }),
+    );
+    expect(body).toContainEqual(
+      expect.objectContaining({
+        type: 'tool-output-available',
+        output: { questions: QUESTIONS },
+      }),
+    );
+  });
+
+  it('keeps going when suggestFollowUps comes before any answer text', async () => {
+    const model = scripted(
+      [null, ['suggestFollowUps']],
+      ['ANC is 12.3% long-haul.', ['suggestFollowUps']],
+    );
+
+    const res = await request(createApp({ model, ctx }))
+      .post('/api/chat')
+      .send({ messages: [userMessage] });
+
+    expect(model.doStreamCalls).toHaveLength(2);
+    expect(chunks(res.text)).toContainEqual(
+      expect.objectContaining({
+        type: 'text-delta',
+        delta: 'ANC is 12.3% long-haul.',
+      }),
+    );
+  });
+
+  it('keeps going when a preamble, a data tool and suggestFollowUps share one step', async () => {
+    const model = scripted(
+      ['Let me look that up.', ['getLongHaulShare', 'suggestFollowUps']],
+      ['SFO is 30.1% long-haul.', ['suggestFollowUps']],
+    );
+
+    const res = await request(createApp({ model, ctx }))
+      .post('/api/chat')
+      .send({ messages: [userMessage] });
+
+    expect(model.doStreamCalls).toHaveLength(2);
+    expect(textDeltas(res.text)).toContain('SFO is 30.1% long-haul.');
+  });
+
+  it('keeps going when a bare suggestFollowUps follows a preamble and data tool', async () => {
+    const model = scripted(
+      ['Let me look that up.', ['getLongHaulShare']],
+      [null, ['suggestFollowUps']],
+      ['SFO is 30.1% long-haul.', ['suggestFollowUps']],
+    );
+
+    const res = await request(createApp({ model, ctx }))
+      .post('/api/chat')
+      .send({ messages: [userMessage] });
+
+    expect(model.doStreamCalls).toHaveLength(3);
+    expect(textDeltas(res.text)).toContain('SFO is 30.1% long-haul.');
+  });
+
+  it('passes earlier turns, tool call and result included, to the model', async () => {
+    const model = scripted(['FAI answer.', []]);
+    const toolOutput = {
+      ok: true,
+      title: 'Long-haul share of departures — ANC',
+      metrics: [],
+    };
+    const messages = [
+      {
+        id: 'u1',
+        role: 'user',
+        parts: [{ type: 'text', text: 'Long-haul share at Anchorage?' }],
+      },
+      {
+        id: 'a1',
+        role: 'assistant',
+        parts: [
+          { type: 'step-start' },
+          {
+            type: 'tool-getLongHaulShare',
+            toolCallId: 'call-1',
+            state: 'output-available',
+            input: { iata: 'ANC' },
+            output: toolOutput,
+          },
+          { type: 'step-start' },
+          { type: 'text', text: 'ANC is 12.3% long-haul.', state: 'done' },
+        ],
+      },
+      {
+        id: 'u2',
+        role: 'user',
+        parts: [
+          { type: 'text', text: 'And how does that compare with Fairbanks?' },
+        ],
+      },
+    ];
+
+    const res = await request(createApp({ model, ctx }))
+      .post('/api/chat')
+      .send({ messages });
+
+    expect(res.status).toBe(200);
+    const prompt = model.doStreamCalls[0]?.prompt ?? [];
+    const parts = prompt.flatMap((m): unknown[] =>
+      typeof m.content === 'string' ? [] : [...m.content],
+    );
+    expect(parts).toContainEqual(
+      expect.objectContaining({
+        type: 'tool-call',
+        toolCallId: 'call-1',
+        toolName: 'getLongHaulShare',
+        input: { iata: 'ANC' },
+      }),
+    );
+    expect(parts).toContainEqual(
+      expect.objectContaining({
+        type: 'tool-result',
+        toolCallId: 'call-1',
+        output: { type: 'json', value: toolOutput },
+      }),
+    );
+    expect(JSON.stringify(prompt)).toContain('Fairbanks');
+  });
+
   it('rejects a malformed messages body with 400 InvalidInput', async () => {
     const res = await request(
       createApp({ model: new MockLanguageModelV4(), ctx }),

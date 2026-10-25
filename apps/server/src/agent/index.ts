@@ -44,7 +44,24 @@ export const streamChat = (
           instructions: INSTRUCTIONS,
           messages: modelMessages,
           tools,
-          stopWhen: isStepCount(MAX_STEPS),
+          stopWhen: [
+            isStepCount(MAX_STEPS),
+            // End on a suggestFollowUps-only step, and only when answer text came after the last data
+            // tool call, so a preamble or an early call cannot swallow the answer.
+            ({ steps }) => {
+              const isSuggest = (c: { toolName: string }) =>
+                c.toolName === 'suggestFollowUps';
+              const calls = steps.at(-1)?.toolCalls ?? [];
+              const lastData = steps.findLastIndex((s) =>
+                s.toolCalls.some((c) => !isSuggest(c)),
+              );
+              return (
+                calls.length > 0 &&
+                calls.every(isSuggest) &&
+                steps.slice(lastData + 1).some((s) => s.text.trim() !== '')
+              );
+            },
+          ],
           // The last allowed step may not call tools, so the reply always ends in text.
           prepareStep: ({ stepNumber }) =>
             stepNumber === MAX_STEPS - 1 ? { toolChoice: 'none' } : undefined,

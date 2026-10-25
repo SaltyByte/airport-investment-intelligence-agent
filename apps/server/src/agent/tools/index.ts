@@ -4,6 +4,7 @@ import { createCompareCongestionTool } from './compare-congestion';
 import { createEstimateUnmetDemandTool } from './estimate-unmet-demand';
 import { createGetLongHaulShareTool } from './get-long-haul-share';
 import { createRankExpansionCandidatesTool } from './rank-expansion-candidates';
+import { suggestFollowUpsTool } from './suggest-follow-ups';
 
 /** Data every tool reads; built once at server boot. */
 export type ToolContext = {
@@ -17,4 +18,5 @@ export const createTools = (ctx: ToolContext) => ({
   compareCongestion: createCompareCongestionTool(ctx),
   rankExpansionCandidates: createRankExpansionCandidatesTool(ctx),
   estimateUnmetDemand: createEstimateUnmetDemandTool(ctx),
+  suggestFollowUps: suggestFollowUpsTool,
 });
