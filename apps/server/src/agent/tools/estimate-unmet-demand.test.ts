@@ -198,7 +198,7 @@ describe('estimateUnmetDemand', () => {
       value: 13,
       unit: 'seats',
       estimate: true,
-      context: '0 extra departures needed',
+      context: '0 extra departures needed (est.)',
     });
     expect(r.caveatBadge).toBe('Estimate, not observed demand');
     expect(r.metrics.map((m) => m.label)).toEqual([
@@ -265,7 +265,7 @@ describe('estimateUnmetDemand', () => {
       unit: 'count',
       estimate: true,
     });
-    expect(r.headline?.context).toBe('1 extra departures needed');
+    expect(r.headline?.context).toBe('1 extra departures needed (est.)');
     expect(r.table?.rows).toEqual([
       { iata: 'LAX', monthsAbove: 2, seatsShort: 125, extraDepartures: 1 },
       { iata: 'SEA', monthsAbove: 1, seatsShort: 100, extraDepartures: 0 },

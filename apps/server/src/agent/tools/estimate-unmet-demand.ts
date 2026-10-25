@@ -180,7 +180,7 @@ export const estimateUnmetDemand = (
       value: g.gap,
       unit: 'seats',
       estimate: true,
-      context: `${fmt(extraDepartures)} extra departures needed`,
+      context: `${fmt(extraDepartures)} extra departures needed (est.)`,
     },
     metrics: [
       { label: 'Seat gap', value: g.gap, unit: 'seats', estimate: true },
