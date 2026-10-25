@@ -1,6 +1,6 @@
 import type { AppError, Region } from '@app/shared';
 import { err, ok, type Result } from 'neverthrow';
-import type { AirportKpis } from '../kpis/national';
+import type { AirportKpis } from '../../kpis/airport-kpis';
 
 // Glossary: New England is six states plus Albany as a catchment airport; the LA basin is five airports.
 const NEW_ENGLAND = ['ME', 'NH', 'VT', 'MA', 'RI', 'CT'];

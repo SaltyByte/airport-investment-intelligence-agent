@@ -1,12 +1,16 @@
 import { EstimateUnmetDemandInput, type ToolResult } from '@app/shared';
 import { tool } from 'ai';
-import type { RouteRow } from '../../ingest/snapshot-schema';
-import { seatGap, TARGET_LOAD_FACTOR } from '../../kpis';
-import type { AirportKpis } from '../../kpis/national';
-import { DELAY_CAVEATS, GROWTH_CAVEAT, snapshotFooter } from '../footer';
-import { resolveAirports } from '../regions';
-import { roundResult } from '../round-result';
-import type { ToolContext } from '../tools';
+import type { AirportKpis } from '../../kpis/airport-kpis';
+import { seatGap, TARGET_LOAD_FACTOR } from '../../kpis/formulas';
+import type { RouteRow } from '../../snapshot/schema';
+import type { ToolContext } from './index';
+import { resolveAirports } from './regions';
+import {
+  DELAY_CAVEATS,
+  GROWTH_CAVEAT,
+  roundResult,
+  snapshotFooter,
+} from './result';
 
 const DRIVER_PERCENTILE = 75;
 const NAS_SHARE = 25;
@@ -125,7 +129,7 @@ export const demandDrivers = (e: DriverEvidence): string[] => {
 
 export const estimateUnmetDemand = (
   { snapshot, kpis }: ToolContext,
-  iata: string,
+  { iata }: EstimateUnmetDemandInput,
 ): ToolResult => {
   const found = resolveAirports([iata], kpis);
   if (found.isErr()) return { ok: false, error: found.error };
@@ -201,10 +205,10 @@ export const estimateUnmetDemand = (
   };
 };
 
-export const estimateUnmetDemandTool = (ctx: ToolContext) =>
+export const createEstimateUnmetDemandTool = (ctx: ToolContext) =>
   tool({
     description:
       'Returns the estimated seat gap at one airport, its most under-served routes and the capacity-constraint drivers behind it. Use for questions about unmet or excess demand at an airport and why.',
     inputSchema: EstimateUnmetDemandInput,
-    execute: ({ iata }) => roundResult(estimateUnmetDemand(ctx, iata)),
+    execute: (input) => roundResult(estimateUnmetDemand(ctx, input)),
   });

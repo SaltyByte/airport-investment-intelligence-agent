@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { loadSnapshot } from './load-snapshot';
-import type { Snapshot } from './snapshot-schema';
+import { loadSnapshot } from './load';
+import type { Snapshot } from './schema';
 
 const snapshot: Snapshot = {
   meta: {

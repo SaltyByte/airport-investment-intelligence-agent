@@ -1,5 +1,6 @@
-import type { ToolSuccess } from '@app/shared';
-import type { Snapshot } from '../ingest/snapshot-schema';
+// The parts every tool result shares: source footer, standard caveats and display rounding.
+import type { ToolResult, ToolSuccess, ToolUnit } from '@app/shared';
+import type { Snapshot } from '../../snapshot/schema';
 
 export const DELAY_CAVEATS = [
   'Delay figures cover domestic flights of US reporting carriers only; international and regional-only flights are not included.',
@@ -47,5 +48,48 @@ export const snapshotFooter = (
     source: parts.map((p) => p.name).join('; '),
     period: periodText.charAt(0).toUpperCase() + periodText.slice(1),
     generatedAt,
+  };
+};
+
+// Decimals per unit, matching the web result card's display.
+const DECIMALS: Record<ToolUnit, number> = {
+  percent: 1,
+  minutes: 1,
+  score: 1,
+  percentile: 1,
+  count: 0,
+  seats: 0,
+  miles: 0,
+};
+
+const round = <T>(value: T, unit: ToolUnit | undefined): T => {
+  if (typeof value !== 'number' || unit === undefined) return value;
+  const f = 10 ** DECIMALS[unit];
+  return (Math.round(value * f) / f) as T;
+};
+
+/** Rounds metric values, percentiles and table cells by unit so the model quotes display-ready numbers. */
+export const roundResult = (result: ToolResult): ToolResult => {
+  if (!result.ok) return result;
+  const units = new Map(result.table?.columns.map((c) => [c.key, c.unit]));
+  return {
+    ...result,
+    metrics: result.metrics.map((m) => ({
+      ...m,
+      value: round(m.value, m.unit),
+      ...(m.percentile === undefined
+        ? {}
+        : { percentile: round(m.percentile, 'percentile') }),
+    })),
+    ...(result.table && {
+      table: {
+        columns: result.table.columns,
+        rows: result.table.rows.map((row) =>
+          Object.fromEntries(
+            Object.entries(row).map(([k, v]) => [k, round(v, units.get(k))]),
+          ),
+        ),
+      },
+    }),
   };
 };

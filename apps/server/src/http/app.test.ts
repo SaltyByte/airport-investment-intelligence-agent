@@ -2,8 +2,8 @@ import { simulateReadableStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { buildNationalKpis } from '../kpis/national';
-import { airport, snapshot } from '../test-fixture';
+import { buildNationalKpis } from '../kpis/airport-kpis';
+import { airport, snapshot } from '../test/fixtures';
 import { createApp } from './app';
 
 const fixture = snapshot([airport('SFO')]);

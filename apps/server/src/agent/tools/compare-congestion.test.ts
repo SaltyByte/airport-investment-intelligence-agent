@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildNationalKpis } from '../../kpis/national';
-import { airport, delays, snapshot } from '../../test-fixture';
-import { DELAY_CAVEATS } from '../footer';
-import { compareCongestion, compareCongestionTool } from './compareCongestion';
+import { buildNationalKpis } from '../../kpis/airport-kpis';
+import { airport, delays, snapshot } from '../../test/fixtures';
+import {
+  compareCongestion,
+  createCompareCongestionTool,
+} from './compare-congestion';
+import { DELAY_CAVEATS } from './result';
 
 const snap = snapshot([
   airport('LAX', {
@@ -114,7 +117,7 @@ describe('compareCongestion', () => {
   });
 
   it('rejects fewer than 2 or more than 10 airports at the schema', () => {
-    const schema = compareCongestionTool(ctx).inputSchema as {
+    const schema = createCompareCongestionTool(ctx).inputSchema as {
       safeParse: (v: unknown) => { success: boolean };
     };
     expect(schema.safeParse({ airports: ['LAX'] }).success).toBe(false);

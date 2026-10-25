@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { RouteRow } from '../../ingest/snapshot-schema';
-import { buildNationalKpis } from '../../kpis/national';
-import { airport, snapshot } from '../../test-fixture';
-import { longHaulReport } from './getLongHaulShare';
+import { buildNationalKpis } from '../../kpis/airport-kpis';
+import type { RouteRow } from '../../snapshot/schema';
+import { airport, snapshot } from '../../test/fixtures';
+import { getLongHaulShare } from './get-long-haul-share';
 
 const route = (
   dest: string,
@@ -23,10 +23,13 @@ const route = (
 
 const run = (routes: RouteRow[], iata = 'ANC') => {
   const snap = { ...snapshot([airport('ANC'), airport('SNA')]), routes };
-  return longHaulReport(snap, buildNationalKpis(snap), iata);
+  return getLongHaulShare(
+    { snapshot: snap, kpis: buildNationalKpis(snap) },
+    { iata },
+  );
 };
 
-describe('longHaulReport', () => {
+describe('getLongHaulShare', () => {
   it('splits shares by service and counts 3,000 mi as long-haul but not 2,999', () => {
     const result = run([
       route('SEA', 2999, 6),

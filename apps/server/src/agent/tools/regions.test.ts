@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildNationalKpis } from '../kpis/national';
-import { airport, snapshot } from '../test-fixture';
+import { buildNationalKpis } from '../../kpis/airport-kpis';
+import { airport, snapshot } from '../../test/fixtures';
 import { resolveAirports, resolveRegion } from './regions';
 
 const kpis = buildNationalKpis(

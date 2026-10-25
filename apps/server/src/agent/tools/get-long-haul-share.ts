@@ -1,11 +1,10 @@
 import { GetLongHaulShareInput, type ToolResult } from '@app/shared';
 import { tool } from 'ai';
-import type { RouteRow, Snapshot } from '../../ingest/snapshot-schema';
-import { LONG_HAUL_MILES, longHaulShare } from '../../kpis';
-import type { AirportKpis } from '../../kpis/national';
-import { snapshotFooter } from '../footer';
-import { resolveAirports } from '../regions';
-import { roundResult } from '../round-result';
+import { LONG_HAUL_MILES, longHaulShare } from '../../kpis/formulas';
+import type { RouteRow } from '../../snapshot/schema';
+import type { ToolContext } from './index';
+import { resolveAirports } from './regions';
+import { roundResult, snapshotFooter } from './result';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
@@ -23,10 +22,9 @@ const shareMetric = (label: string, rows: RouteRow[]) => {
 };
 
 /** Long-haul share of an airport's departures (all / passenger / cargo) plus its top long-haul destinations. */
-export const longHaulReport = (
-  snapshot: Snapshot,
-  kpis: Map<string, AirportKpis>,
-  iata: string,
+export const getLongHaulShare = (
+  { snapshot, kpis }: ToolContext,
+  { iata }: GetLongHaulShareInput,
 ): ToolResult =>
   resolveAirports([iata], kpis).match(
     ([airport]): ToolResult => {
@@ -97,14 +95,10 @@ export const longHaulReport = (
     (error): ToolResult => ({ ok: false, error }),
   );
 
-export const getLongHaulShare = (
-  snapshot: Snapshot,
-  kpis: Map<string, AirportKpis>,
-) =>
+export const createGetLongHaulShareTool = (ctx: ToolContext) =>
   tool({
     description:
       'Returns the long-haul share of departures from one airport for all, passenger and cargo flights, with its top long-haul destinations. Use for questions about long-haul flights out of an airport.',
     inputSchema: GetLongHaulShareInput,
-    execute: async ({ iata }) =>
-      roundResult(longHaulReport(snapshot, kpis, iata)),
+    execute: async (input) => roundResult(getLongHaulShare(ctx, input)),
   });

@@ -1,8 +1,8 @@
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { loadConfig } from './config';
 import { createApp } from './http/app';
-import { loadSnapshot } from './ingest/load-snapshot';
-import { buildNationalKpis } from './kpis/national';
+import { buildNationalKpis } from './kpis/airport-kpis';
+import { loadSnapshot } from './snapshot/load';
 
 loadConfig(process.env)
   .andThen((config) =>

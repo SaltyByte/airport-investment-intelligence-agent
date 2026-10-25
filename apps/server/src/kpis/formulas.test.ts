@@ -6,7 +6,7 @@ import {
   peerPercentiles,
   percentileRank,
   seatGap,
-} from './index';
+} from './formulas';
 
 describe('percentileRank', () => {
   it('uses the mid-rank so ties share a percentile', () => {

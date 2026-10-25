@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { airport, delays, snapshot } from '../test-fixture';
-import { buildNationalKpis } from './national';
+import { airport, delays, snapshot } from '../test/fixtures';
+import { buildNationalKpis } from './airport-kpis';
 
 describe('buildNationalKpis', () => {
   const kpis = buildNationalKpis(

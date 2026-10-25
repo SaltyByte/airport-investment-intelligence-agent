@@ -4,11 +4,10 @@ import {
   type ToolTable,
 } from '@app/shared';
 import { tool } from 'ai';
-import type { AirportKpis } from '../../kpis/national';
-import { DELAY_CAVEATS, snapshotFooter } from '../footer';
-import { resolveAirports, resolveRegion } from '../regions';
-import { roundResult } from '../round-result';
-import type { ToolContext } from '../tools';
+import type { AirportKpis } from '../../kpis/airport-kpis';
+import type { ToolContext } from './index';
+import { resolveAirports, resolveRegion } from './regions';
+import { DELAY_CAVEATS, roundResult, snapshotFooter } from './result';
 
 const COLUMNS: ToolTable['columns'] = [
   { key: 'iata', label: 'Airport' },
@@ -146,7 +145,7 @@ export const compareCongestion = (
   };
 };
 
-export const compareCongestionTool = (ctx: ToolContext) =>
+export const createCompareCongestionTool = (ctx: ToolContext) =>
   tool({
     description:
       'Returns the congestion index, delay, taxi-out, cancellation and delay-cause figures for 2-10 airports or every airport in a region, most congested first. Use to compare how congested airports are.',

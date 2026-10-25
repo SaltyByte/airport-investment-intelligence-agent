@@ -1,9 +1,32 @@
 import type { ToolResult } from '@app/shared';
 import { describe, expect, it } from 'vitest';
-import { buildNationalKpis } from '../kpis/national';
-import { airport, snapshot } from '../test-fixture';
-import { roundResult } from './round-result';
-import { createTools } from './tools';
+import { snapshot } from '../../test/fixtures';
+import { roundResult, snapshotFooter } from './result';
+
+describe('snapshotFooter', () => {
+  it("names each used source's own period in plain words", () => {
+    expect(
+      snapshotFooter(snapshot([]), ['traffic', 'delays', 'growth']),
+    ).toEqual({
+      source:
+        'BTS T-100 Segment; BTS On-Time Reporting Carrier; FAA enplanements',
+      period:
+        'Traffic Aug 2025–Jul 2026; delays Jul 2026; growth CY2025 vs CY2024',
+      generatedAt: '2026-10-25T10:00:00.000Z',
+    });
+  });
+
+  it('lists only the sources a tool uses', () => {
+    expect(snapshotFooter(snapshot([]), ['delays'])).toMatchObject({
+      source: 'BTS On-Time Reporting Carrier',
+      period: 'Delays Jul 2026',
+    });
+    expect(snapshotFooter(snapshot([]), ['traffic'])).toMatchObject({
+      source: 'BTS T-100 Segment',
+      period: 'Traffic Aug 2025–Jul 2026',
+    });
+  });
+});
 
 const footer = {
   source: 's',
@@ -80,25 +103,5 @@ describe('roundResult', () => {
       error: { kind: 'NotFound', message: 'x' },
     };
     expect(roundResult(e)).toBe(e);
-  });
-});
-
-describe('createTools', () => {
-  it('returns rounded results from tool execution', async () => {
-    const snap = snapshot([
-      airport('SFO'),
-      airport('OAK', { enplanements: 1234 }),
-    ]);
-    const tools = createTools({
-      snapshot: snap,
-      kpis: buildNationalKpis(snap),
-    });
-    const r = (await tools.compareCongestion.execute?.(
-      { airports: ['SFO', 'OAK'] },
-      { toolCallId: '1', messages: [], context: {} },
-    )) as ToolResult;
-    if (!r.ok) throw new Error(r.error.message);
-    // Fixture delayed-15 share is 20/98 = 20.408...%.
-    expect(r.table?.rows[0]?.delayed15Share).toBe(20.4);
   });
 });

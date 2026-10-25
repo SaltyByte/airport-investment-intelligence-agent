@@ -5,12 +5,16 @@ import {
 } from '@app/shared';
 import { tool } from 'ai';
 import { err, ok, type Result } from 'neverthrow';
-import { EXPANSION_WEIGHTS } from '../../kpis';
-import type { AirportKpis } from '../../kpis/national';
-import { DELAY_CAVEATS, GROWTH_CAVEAT, snapshotFooter } from '../footer';
-import { resolveAirports, resolveRegion } from '../regions';
-import { roundResult } from '../round-result';
-import type { ToolContext } from '../tools';
+import type { AirportKpis } from '../../kpis/airport-kpis';
+import { EXPANSION_WEIGHTS } from '../../kpis/formulas';
+import type { ToolContext } from './index';
+import { resolveAirports, resolveRegion } from './regions';
+import {
+  DELAY_CAVEATS,
+  GROWTH_CAVEAT,
+  roundResult,
+  snapshotFooter,
+} from './result';
 
 // Plain words for the KPI names in expansion.missing.
 const MISSING_WORDS: Record<string, string> = {
@@ -63,9 +67,9 @@ const assumptions = (
 ];
 
 /** Expansion-score ranking of a region or airport list; airports lacking data are listed in notes. */
-export const expansionRanking = (
-  input: RankExpansionCandidatesInput,
+export const rankExpansionCandidates = (
   { snapshot, kpis }: ToolContext,
+  input: RankExpansionCandidatesInput,
 ): ToolResult =>
   members(input, kpis).match(
     (list): ToolResult => {
@@ -151,10 +155,10 @@ export const expansionRanking = (
     (error): ToolResult => ({ ok: false, error }),
   );
 
-export const rankExpansionCandidates = (ctx: ToolContext) =>
+export const createRankExpansionCandidatesTool = (ctx: ToolContext) =>
   tool({
     description:
       'Returns airports in a region or a list ranked by Expansion Score with its Growth, Pressure and Scale pillars, plus airports lacking data. Use for questions about which airports most need terminal expansion.',
     inputSchema: RankExpansionCandidatesInput,
-    execute: async (input) => roundResult(expansionRanking(input, ctx)),
+    execute: async (input) => roundResult(rankExpansionCandidates(ctx, input)),
   });

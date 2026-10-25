@@ -8,7 +8,7 @@ import {
   SNAPSHOT_GZ_FILE,
   type Snapshot,
   snapshotSchema,
-} from './snapshot-schema';
+} from './schema';
 
 export const DATA_DIR = fileURLToPath(new URL('../../data/', import.meta.url));
 

@@ -1,10 +1,10 @@
-import type { Snapshot, SnapshotAirport } from '../ingest/snapshot-schema';
+import type { Snapshot, SnapshotAirport } from '../snapshot/schema';
 import {
   congestionIndex,
   type ExpansionScore,
   expansionScore,
   peerPercentiles,
-} from './index';
+} from './formulas';
 
 const CAUSES = [
   'carrier',

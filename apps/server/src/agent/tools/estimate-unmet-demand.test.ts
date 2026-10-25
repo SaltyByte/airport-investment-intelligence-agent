@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { RouteRow } from '../../ingest/snapshot-schema';
-import { buildNationalKpis } from '../../kpis/national';
-import { airport, snapshot } from '../../test-fixture';
-import { DELAY_CAVEATS, GROWTH_CAVEAT } from '../footer';
+import { buildNationalKpis } from '../../kpis/airport-kpis';
+import type { RouteRow } from '../../snapshot/schema';
+import { airport, snapshot } from '../../test/fixtures';
 import {
   demandDrivers,
   estimateUnmetDemand,
   routeGaps,
-} from './estimateUnmetDemand';
+} from './estimate-unmet-demand';
+import { DELAY_CAVEATS, GROWTH_CAVEAT } from './result';
 
 const row = (
   dest: string,
@@ -153,7 +153,7 @@ describe('estimateUnmetDemand', () => {
   const ctx = { snapshot: snap, kpis: buildNationalKpis(snap) };
 
   it('returns the gap, top routes, drivers and footer', () => {
-    const r = estimateUnmetDemand(ctx, 'SFO');
+    const r = estimateUnmetDemand(ctx, { iata: 'SFO' });
     if (!r.ok) throw new Error('expected ok');
     expect(r.metrics[0]).toEqual({
       label: 'Seat gap',
@@ -191,14 +191,14 @@ describe('estimateUnmetDemand', () => {
   });
 
   it('returns NotFound for an unknown airport', () => {
-    expect(estimateUnmetDemand(ctx, 'XXX')).toEqual({
+    expect(estimateUnmetDemand(ctx, { iata: 'XXX' })).toEqual({
       ok: false,
       error: { kind: 'NotFound', message: 'No data for airport codes: XXX.' },
     });
   });
 
   it('returns NotFound when the airport has no passenger routes', () => {
-    const r = estimateUnmetDemand(ctx, 'OAK');
+    const r = estimateUnmetDemand(ctx, { iata: 'OAK' });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.message).toMatch(/no passenger routes/i);
   });

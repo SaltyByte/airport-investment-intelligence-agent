@@ -1,9 +1,9 @@
 import { RankExpansionCandidatesInput } from '@app/shared';
 import { describe, expect, it } from 'vitest';
-import { buildNationalKpis } from '../../kpis/national';
-import { airport, snapshot } from '../../test-fixture';
-import { GROWTH_CAVEAT } from '../footer';
-import { expansionRanking as rankExpansionCandidates } from './rankExpansionCandidates';
+import { buildNationalKpis } from '../../kpis/airport-kpis';
+import { airport, snapshot } from '../../test/fixtures';
+import { rankExpansionCandidates } from './rank-expansion-candidates';
+import { GROWTH_CAVEAT } from './result';
 
 const snap = snapshot([
   airport('BOS', {
@@ -24,7 +24,7 @@ const ctx = { snapshot: snap, kpis: buildNationalKpis(snap) };
 
 describe('rankExpansionCandidates', () => {
   it('ranks a region by score, labels catchment rows and lists excluded airports', () => {
-    const result = rankExpansionCandidates({ region: 'New England' }, ctx);
+    const result = rankExpansionCandidates(ctx, { region: 'New England' });
     if (!result.ok) throw new Error('expected ok');
     const rows = result.table?.rows ?? [];
     expect(rows.map((r) => r.iata)).toEqual(['BOS', 'ALB', 'BDL', 'PVD']);
@@ -62,14 +62,14 @@ describe('rankExpansionCandidates', () => {
   });
 
   it('returns ok with no rows and a note for a region without airports', () => {
-    const result = rankExpansionCandidates({ region: 'WY' }, ctx);
+    const result = rankExpansionCandidates(ctx, { region: 'WY' });
     if (!result.ok) throw new Error('expected ok');
     expect(result.table?.rows).toEqual([]);
     expect(result.notes?.[0]).toMatch(/No airports/);
   });
 
   it('names unknown codes in a NotFound error', () => {
-    expect(rankExpansionCandidates({ airports: ['BOS', 'ZZZ'] }, ctx)).toEqual({
+    expect(rankExpansionCandidates(ctx, { airports: ['BOS', 'ZZZ'] })).toEqual({
       ok: false,
       error: { kind: 'NotFound', message: 'No data for airport codes: ZZZ.' },
     });

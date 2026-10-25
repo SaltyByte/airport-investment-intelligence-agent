@@ -1,8 +1,4 @@
-import type {
-  DelaySums,
-  Snapshot,
-  SnapshotAirport,
-} from './ingest/snapshot-schema';
+import type { DelaySums, Snapshot, SnapshotAirport } from '../snapshot/schema';
 
 // Test-only builders for small snapshots.
 
