@@ -1,12 +1,14 @@
-import { ArrowUp, Square } from 'lucide-react';
+import { ArrowUp, Mic, MicOff, Square } from 'lucide-react';
 import {
   type FormEvent,
   type KeyboardEvent,
   type RefObject,
   useCallback,
+  useEffect,
 } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { useDictation } from '@/hooks/use-dictation';
 
 export function Composer({
   inputRef,
@@ -35,15 +37,26 @@ export function Composer({
     [inputRef],
   );
 
+  const dictation = useDictation(onChange);
+  const { cancel: cancelDictation } = dictation;
+  useEffect(() => {
+    if (busy) cancelDictation();
+  }, [busy, cancelDictation]);
+
+  const send = () => {
+    cancelDictation();
+    onSend(value);
+  };
+
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    onSend(value);
+    send();
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
-      onSend(value);
+      send();
     }
   };
 
@@ -67,6 +80,32 @@ export function Composer({
           className="max-h-40 min-h-11 resize-none"
           autoFocus
         />
+        {dictation.supported && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="relative size-11 aria-pressed:border-primary aria-pressed:text-primary motion-safe:active:scale-95"
+            aria-label={
+              dictation.listening ? 'Stop dictation' : 'Start dictation'
+            }
+            aria-pressed={dictation.listening}
+            disabled={busy}
+            onClick={() => dictation.toggle(value)}
+          >
+            {dictation.listening ? (
+              <>
+                <MicOff aria-hidden className="motion-safe:animate-swap" />
+                <span
+                  aria-hidden
+                  className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive motion-safe:animate-pulse"
+                />
+              </>
+            ) : (
+              <Mic aria-hidden className="motion-safe:animate-swap" />
+            )}
+          </Button>
+        )}
         {busy ? (
           <Button
             ref={stopButtonRef}
@@ -96,6 +135,16 @@ export function Composer({
           </Button>
         )}
       </form>
+      {dictation.supported && (
+        <p
+          role="status"
+          className="mx-auto max-w-[800px] px-4 text-sm text-muted-foreground"
+        >
+          {dictation.error && (
+            <span className="-mt-1 block pb-3">{dictation.error}</span>
+          )}
+        </p>
+      )}
     </footer>
   );
 }
