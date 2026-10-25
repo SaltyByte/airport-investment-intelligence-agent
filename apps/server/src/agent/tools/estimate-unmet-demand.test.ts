@@ -112,6 +112,7 @@ describe('demandDrivers', () => {
     congestionIndex: 74.9,
     nasShare: 24.9,
     growth: 0,
+    growthPeriod: 'CY2025 vs CY2024',
   };
 
   it('reports no driver when every rule is just below its threshold', () => {
@@ -128,13 +129,14 @@ describe('demandDrivers', () => {
       congestionIndex: 75,
       nasShare: 25,
       growth: 0.1,
+      growthPeriod: 'CY2027 vs CY2026',
     });
     expect(notes).toEqual([
       '3 of 10 route-months (30.0%) ran above the 80% target load factor.',
       'Load factor is at the 75th percentile of US airports (threshold 75).',
       'Congestion index is 75.0 of 100 (threshold 75).',
       'National airspace system (NAS) delays cause 25.0% of delay-cause minutes (threshold 25%).',
-      'Passenger enplanements grew 0.1% in CY2025 vs CY2024.',
+      'Passenger enplanements grew 0.1% in CY2027 vs CY2026.',
     ]);
   });
 

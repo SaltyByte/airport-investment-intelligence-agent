@@ -29,6 +29,31 @@ const words = (period: string) =>
     }),
   );
 
+/** One source's own period string from snapshot meta (e.g. "CY2025 vs CY2024" for growth). */
+export const sourcePeriod = (
+  snapshot: Snapshot,
+  key: FooterSource,
+): string | undefined => {
+  const name = SOURCES.find((s) => s.key === key)?.name;
+  return snapshot.meta.sources.find((m) => name?.test(m.name))?.period;
+};
+
+// ≈ 2× BTS publication lag (about 3 months), so a missed monthly refresh alone does not trigger it.
+export const STALE_AFTER_MONTHS = 6;
+
+/** Refresh notice once `now` is more than STALE_AFTER_MONTHS after the traffic period end month, else null. */
+export const staleNotice = (
+  meta: Snapshot['meta'],
+  now: Date,
+): string | null => {
+  const [y, m] = meta.period.end.split('-').map(Number) as [number, number];
+  // Month index m (0-based) is the month after `end`, so this is the first instant past the threshold.
+  const staleFrom = Date.UTC(y, m + STALE_AFTER_MONTHS);
+  return now.getTime() < staleFrom
+    ? null
+    : `Data ends ${words(meta.period.end)}, more than ${STALE_AFTER_MONTHS} months ago; run pnpm ingest to refresh.`;
+};
+
 /** Source names, per-source periods and generation time for the sources a tool uses. */
 export const snapshotFooter = (
   snapshot: Snapshot,

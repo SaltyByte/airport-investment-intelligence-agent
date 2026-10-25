@@ -8,7 +8,7 @@ import {
 } from '../kpis/formulas';
 import { airport, snapshot } from '../test/fixtures';
 import { buildInstructions } from './instructions';
-import { snapshotFooter } from './tools/result';
+import { snapshotFooter, staleNotice } from './tools/result';
 
 // Off-default thresholds, so a hand-copied "3,000" or "80%" in the prompt fails the test.
 vi.mock('../kpis/formulas', async (original) => ({
@@ -18,10 +18,8 @@ vi.mock('../kpis/formulas', async (original) => ({
 }));
 
 const fixture = snapshot([airport('SFO'), airport('OAK')]);
-const prompt = buildInstructions({
-  snapshot: fixture,
-  kpis: buildNationalKpis(fixture),
-});
+const ctx = { snapshot: fixture, kpis: buildNationalKpis(fixture) };
+const prompt = buildInstructions(ctx, new Date('2026-10-25T00:00:00Z'));
 const pct = (w: number) => `${Math.round(w * 100)}%`;
 
 describe('buildInstructions', () => {
@@ -40,5 +38,14 @@ describe('buildInstructions', () => {
   it("states each snapshot source's period", () => {
     const { period } = snapshotFooter(fixture, ['traffic', 'delays', 'growth']);
     for (const p of period.split('; ')) expect(prompt).toContain(p);
+  });
+
+  it('states the stale-data notice in the Limits line only when the snapshot is stale', () => {
+    const stale = new Date('2027-02-01T00:00:00Z');
+    const notice = staleNotice(fixture.meta, stale) as string;
+    expect(buildInstructions(ctx, stale)).toMatch(
+      new RegExp(`- Limits: .*${notice.replace(/[.;]/g, '\\$&')}`),
+    );
+    expect(prompt).not.toContain('pnpm ingest');
   });
 });

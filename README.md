@@ -26,7 +26,7 @@ pnpm dev               # server on :4100, web app on http://localhost:5173
 ```
 
 - `pnpm check`: Biome, typecheck and tests across the workspace.
-- `pnpm ingest`: re-downloads the public sources and rewrites `apps/server/data/snapshot.json.gz` (takes minutes). Not needed to run the app: the snapshot is committed.
+- `pnpm ingest`: re-downloads the newest published public sources and rewrites `apps/server/data/snapshot.json.gz` (takes minutes). Not needed to run the app: the snapshot is committed. Once its traffic period ends more than 6 months ago, answers and the server log say so.
 
 ## Layout
 

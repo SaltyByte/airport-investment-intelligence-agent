@@ -1,7 +1,7 @@
 import { ToolResult } from '@app/shared';
 import { describe, expect, it } from 'vitest';
 import { snapshot } from '../../test/fixtures';
-import { gapNote, roundResult, snapshotFooter } from './result';
+import { gapNote, roundResult, snapshotFooter, staleNotice } from './result';
 
 describe('snapshotFooter', () => {
   it("names each used source's own period in plain words", () => {
@@ -25,6 +25,22 @@ describe('snapshotFooter', () => {
       source: 'BTS T-100 Segment',
       period: 'Traffic Aug 2025–Jul 2026',
     });
+  });
+});
+
+describe('staleNotice', () => {
+  // Fixture traffic period ends 2026-07, so the snapshot turns stale on 2027-02-01.
+  const { meta } = snapshot([]);
+
+  it('is null up to 6 months after the period end month', () => {
+    expect(staleNotice(meta, new Date('2026-10-25T00:00:00Z'))).toBeNull();
+    expect(staleNotice(meta, new Date('2027-01-31T23:59:59Z'))).toBeNull();
+  });
+
+  it('names the period end once more than 6 months have passed', () => {
+    expect(staleNotice(meta, new Date('2027-02-01T00:00:00Z'))).toBe(
+      'Data ends Jul 2026, more than 6 months ago; run pnpm ingest to refresh.',
+    );
   });
 });
 

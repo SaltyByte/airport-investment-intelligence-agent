@@ -3,9 +3,31 @@ import { readFile } from 'node:fs/promises';
 import { unzipSync } from 'fflate';
 import { BROWSER_UA, cached } from '../download';
 
-// shortcut: FAA publishes one calendar year per file, bump when CY2026 lands (Aug 2027).
-export const FAA_URL =
-  'https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger/arp-cy2025-commercial-service-enplanements.xlsx';
+// FAA publishes one calendar-year file (with the prior year alongside) each summer.
+export const FAA_URL = (year: number): string =>
+  `https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger/arp-cy${year}-commercial-service-enplanements.xlsx`;
+
+/** Snapshot source period label for one FAA file. */
+export const faaPeriod = (year: number): string => `CY${year} vs CY${year - 1}`;
+
+/** Newest published FAA calendar year, probing back from last year (404 → older). */
+export const latestFaaYear = async (
+  now = new Date(),
+  fetchFn: typeof fetch = fetch,
+): Promise<number> => {
+  const last = now.getUTCFullYear() - 1;
+  for (let year = last; year > last - 4; year--) {
+    const res = await fetchFn(FAA_URL(year), {
+      method: 'HEAD',
+      headers: { 'user-agent': BROWSER_UA },
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (res.ok) return year;
+    if (res.status !== 404)
+      throw new Error(`HTTP ${res.status} probing CY${year}`);
+  }
+  throw new Error(`no FAA enplanements file for CY${last - 3}..CY${last}`);
+};
 
 export type FaaAirport = {
   locid: string;
@@ -19,10 +41,10 @@ export type FaaAirport = {
   priorEnplanements: number;
 };
 
-/** Downloads (cached) the FAA xlsx and parses its first sheet. */
-export const loadFaa = async (): Promise<FaaAirport[]> => {
-  const path = await cached('faa-cy2025-commercial-service.xlsx', () =>
-    fetch(FAA_URL, {
+/** Downloads (cached) one year's FAA xlsx and parses its first sheet. */
+export const loadFaa = async (year: number): Promise<FaaAirport[]> => {
+  const path = await cached(`faa-cy${year}-commercial-service.xlsx`, () =>
+    fetch(FAA_URL(year), {
       headers: { 'user-agent': BROWSER_UA },
       signal: AbortSignal.timeout(120_000),
     }),
@@ -36,6 +58,7 @@ export const loadFaa = async (): Promise<FaaAirport[]> => {
   const rows = parseFaaSheet(
     text('xl/worksheets/sheet1.xml'),
     text('xl/sharedStrings.xml'),
+    year,
   );
   if (rows.length === 0) throw new Error('no airport rows in xlsx');
   return rows;
@@ -50,11 +73,14 @@ const decodeXml = (text: string): string =>
     .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
     .replace(/&amp;/g, '&');
 
-/** FAA commercial-service enplanements sheet XML (+ sharedStrings) → ranked airport rows. */
+/** FAA commercial-service enplanements sheet XML (+ sharedStrings) → ranked airport rows. Columns name the file year ("CY 25"). */
 export const parseFaaSheet = (
   sheetXml: string,
   sharedStringsXml: string,
+  year: number,
 ): FaaAirport[] => {
+  const cy = (y: number) =>
+    `CY ${String(y % 100).padStart(2, '0')} Enplanements`;
   const shared = [...sharedStringsXml.matchAll(/<si>([\s\S]*?)<\/si>/g)].map(
     ([, si]) =>
       decodeXml(
@@ -104,8 +130,8 @@ export const parseFaaSheet = (
         name: get(row, 'Airport Name'),
         serviceLevel,
         hub: hub === 'None' ? null : (hub as FaaAirport['hub']),
-        enplanements: Number(get(row, 'CY 25 Enplanements')),
-        priorEnplanements: Number(get(row, 'CY 24 Enplanements')),
+        enplanements: Number(get(row, cy(year))),
+        priorEnplanements: Number(get(row, cy(year - 1))),
       };
     });
 };

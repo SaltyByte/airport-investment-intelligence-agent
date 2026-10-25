@@ -12,7 +12,7 @@ import {
 import { buildAirports } from './airports';
 import { CACHE_DIR, fromSource } from './download';
 import { type Period, selectPeriod } from './period';
-import { FAA_URL, loadFaa } from './sources/faa';
+import { FAA_URL, faaPeriod, latestFaaYear, loadFaa } from './sources/faa';
 import { latestOnTimeMonth, loadOnTime, ON_TIME_URL } from './sources/on-time';
 import { loadOurAirports, OUR_AIRPORTS_URL } from './sources/our-airports';
 import { latestT100Month, loadT100, T100_URL } from './sources/t100';
@@ -36,10 +36,18 @@ const buildSnapshot = async (period: Period): Promise<Snapshot> => {
   const [t100, delays, faa, ourAirports] = await Promise.all([
     fromSource('BTS T-100', () => loadT100(period.months)),
     fromSource('BTS On-Time PREZIP', () => loadOnTime(period.end)),
-    fromSource('FAA enplanements', loadFaa),
+    fromSource('FAA enplanements', async () => {
+      const year = await latestFaaYear();
+      return { year, airports: await loadFaa(year) };
+    }),
     fromSource('OurAirports', loadOurAirports),
   ]);
-  const airports = buildAirports(faa, ourAirports, t100.traffic, delays);
+  const airports = buildAirports(
+    faa.airports,
+    ourAirports,
+    t100.traffic,
+    delays,
+  );
   const peerSet = new Set(airports.map((a) => a.iata));
   return snapshotSchema.parse({
     meta: {
@@ -58,8 +66,8 @@ const buildSnapshot = async (period: Period): Promise<Snapshot> => {
         },
         {
           name: 'FAA commercial-service enplanements',
-          url: FAA_URL,
-          period: 'CY2025 vs CY2024',
+          url: FAA_URL(faa.year),
+          period: faaPeriod(faa.year),
         },
         {
           name: 'OurAirports airports.csv',

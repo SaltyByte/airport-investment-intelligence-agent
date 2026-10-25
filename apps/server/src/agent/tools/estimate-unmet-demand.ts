@@ -10,6 +10,7 @@ import {
   GROWTH_CAVEAT,
   roundResult,
   snapshotFooter,
+  sourcePeriod,
 } from './result';
 
 const DRIVER_PERCENTILE = 75;
@@ -83,6 +84,8 @@ export type DriverEvidence = {
   congestionIndex: number | null;
   nasShare: number | null;
   growth: number | null;
+  /** FAA growth period label from the snapshot, e.g. "CY2025 vs CY2024". */
+  growthPeriod: string;
 };
 
 const f1 = (n: number) => n.toFixed(1);
@@ -123,7 +126,7 @@ export const demandDrivers = (e: DriverEvidence): string[] => {
     );
   if (e.growth !== null && e.growth > 0)
     notes.push(
-      `Passenger enplanements grew ${f1(e.growth)}% in CY2025 vs CY2024.`,
+      `Passenger enplanements grew ${f1(e.growth)}% in ${e.growthPeriod}.`,
     );
   if (notes.length > 0) return notes;
   const checks = [
@@ -169,6 +172,7 @@ export const estimateUnmetDemand = (
       },
     };
   const nasShare = a.causeShares?.nas ?? null;
+  const growthPeriod = sourcePeriod(snapshot, 'growth') ?? 'calendar years';
   const extraDepartures = Math.round(g.extraDepartures);
   return {
     ok: true,
@@ -209,7 +213,7 @@ export const estimateUnmetDemand = (
         unit: 'percent',
       },
       {
-        label: 'Passenger growth CY2025 vs CY2024',
+        label: `Passenger growth ${growthPeriod}`,
         value: a.growth,
         unit: 'percent',
         percentile: a.percentiles.growth,
@@ -247,6 +251,7 @@ export const estimateUnmetDemand = (
       congestionIndex: a.congestionIndex,
       nasShare,
       growth: a.growth,
+      growthPeriod,
     }),
     ...snapshotFooter(snapshot, ['traffic', 'delays', 'growth']),
     assumptions: [

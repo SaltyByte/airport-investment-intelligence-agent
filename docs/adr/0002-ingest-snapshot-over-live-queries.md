@@ -12,4 +12,4 @@ The public sources that hold route traffic and delays (BTS T-100 segment data an
 
 - Upstream rate limits and outages affect only the ingest command; the tools cannot fail upstream.
 - Congestion reflects one month, so seasonal effects (summer thunderstorms, winter fog) are a stated caveat.
-- Data is as fresh as the last ingest run.
+- Data is as fresh as the last ingest run. Each ingest picks the newest BTS months and the newest published FAA calendar year on its own. Once the traffic period ends more than 6 months ago, every data answer, the system prompt and server startup say so and point to `pnpm ingest`.

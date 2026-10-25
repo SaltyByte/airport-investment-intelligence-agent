@@ -95,7 +95,7 @@ The rules are in [ADR 0001](adr/0001-national-percentile-pillar-scoring.md), and
 - **Growth uses calendar years** (FAA CY2025 vs CY2024), not the trailing 12 months of traffic. A single ingest pulls only 12 T-100 months, so there is no prior year to compare against, and the FAA file is the official count with both years in one sheet.
 - **Percentile scoring favours relative position over absolute size.** Ranks are stable and comparable across questions, but a percentile hides magnitude: a 1-point lead may be a tiny real difference. Scale is only 20% of the score, so a small, fast-growing, busy airport can outrank a much larger one.
 - **TranStats form scraping is brittle.** It depends on ASP.NET viewstate fields and the "Latest Available Data" text. If the form changes, ingest fails loudly ("expected a ZIP… (form changed?)") and the committed snapshot stays in place.
-- **Snapshot freshness:** data is only as fresh as the last `pnpm ingest` (the current snapshot was generated 2026-10-25). The FAA file URL is pinned to CY2025 and has to be updated when CY2026 is published (expected Aug 2027).
+- **Snapshot freshness:** data is only as fresh as the last `pnpm ingest` (the current snapshot was generated 2026-10-25). Ingest finds the newest published FAA calendar year by probing back from last year, so a re-ingest after CY2026 is published (expected Aug 2027) switches growth and the peer set to it. Once the traffic period ended more than 6 months ago (`STALE_AFTER_MONTHS` in `agent/tools/result.ts`), every data card gets a caveat, the system prompt's limits mention it and the server warns at startup.
 
 ## How to run
 

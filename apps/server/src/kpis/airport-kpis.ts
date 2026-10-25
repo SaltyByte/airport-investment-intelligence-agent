@@ -37,7 +37,7 @@ type RawKpis = {
   seats: number | null;
   /** Ratio 0-1. */
   loadFactor: number | null;
-  /** Percent change in FAA enplanements, CY2025 vs CY2024. */
+  /** Percent change in FAA enplanements, latest published calendar year vs the year before. */
   growth: number | null;
   /** On-time month: flights, percents 0-100, means in minutes. */
   flights: number | null;

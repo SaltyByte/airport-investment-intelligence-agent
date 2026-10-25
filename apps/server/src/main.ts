@@ -1,4 +1,5 @@
 import { createDeepSeek } from '@ai-sdk/deepseek';
+import { staleNotice } from './agent/tools/result';
 import { loadConfig } from './config';
 import { createApp } from './http/app';
 import { buildNationalKpis } from './kpis/airport-kpis';
@@ -18,6 +19,8 @@ loadConfig(process.env)
   )
   .match(
     ({ config, ctx }) => {
+      const stale = staleNotice(ctx.snapshot.meta, new Date());
+      if (stale) console.warn(stale);
       const deepseek = createDeepSeek({ apiKey: config.DEEPSEEK_API_KEY });
       // Express 5 passes listen errors (e.g. EADDRINUSE) to this callback.
       createApp({ model: deepseek(config.DEEPSEEK_MODEL), ctx }).listen(
